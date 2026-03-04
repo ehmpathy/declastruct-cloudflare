@@ -31,19 +31,15 @@ if (
   throw new Error(`integration.test is not targeting stage 'test'`);
 
 /**
- * sanity check that AWS credentials are available for integration tests
+ * sanity check that credentials are available for integration tests
  *
  * usecases
  * - prevent silent test failures due to missing credentials
  * - provide clear instructions on how to set up credentials
- *
- * supports
- * - AWS_PROFILE: local dev via ~/.aws/config profiles
- * - AWS_ACCESS_KEY_ID: CI/CD via OIDC or IAM credentials
  */
-if (!(process.env.AWS_PROFILE || process.env.AWS_ACCESS_KEY_ID))
+if (!(process.env.CLOUDFLARE_ACCOUNT_ID || process.env.CLOUDFLARE_API_TOKEN))
   throw new Error(
-    'AWS credentials not set. Run w/ creds via `source .agent/repo=.this/skills/use.demo.awsprofile.sh && npm run test:integration`',
+    'AWS credentials not set. Run w/ creds via `source .agent/repo=.this/role=any/skills/use.demo.cloudflare.creds.sh && npm run test:integration`',
   );
 
 /**
