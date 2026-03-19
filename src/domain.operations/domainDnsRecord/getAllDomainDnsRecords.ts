@@ -5,7 +5,7 @@ import type { DeclaredCloudflareDomainDnsRecord } from '@src/domain.objects/Decl
 import type { DeclaredCloudflareDomainZone } from '@src/domain.objects/DeclaredCloudflareDomainZone';
 
 import { castIntoDeclaredCloudflareDomainDnsRecord } from './castIntoDeclaredCloudflareDomainDnsRecord';
-import { resolveZoneRef } from './resolveZoneRef';
+import { expandZoneRef } from './expandZoneRef';
 
 /**
  * .what = gets all DNS records for a zone from cloudflare
@@ -19,15 +19,15 @@ export const getAllDomainDnsRecords = async (
 ): Promise<HasReadonly<typeof DeclaredCloudflareDomainDnsRecord>[]> => {
   const { client } = context.cloudflare;
 
-  // resolve zone id
-  const zoneId = await resolveZoneRef(input.zone, context);
+  // expand zone ref to get both id and name
+  const zone = await expandZoneRef(input.zone, context);
 
-  // fetch all records using async iterator
+  // fetch all records via async iterator
   const records: HasReadonly<typeof DeclaredCloudflareDomainDnsRecord>[] = [];
 
-  for await (const record of client.dns.records.list({ zone_id: zoneId })) {
+  for await (const record of client.dns.records.list({ zone_id: zone.id })) {
     records.push(
-      castIntoDeclaredCloudflareDomainDnsRecord(record, { id: zoneId }),
+      castIntoDeclaredCloudflareDomainDnsRecord(record, { name: zone.name }),
     );
   }
 

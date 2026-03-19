@@ -6,24 +6,31 @@ import type { DeclaredCloudflareDomainZone } from '@src/domain.objects/DeclaredC
 import { getOneDomainZone } from '@src/domain.operations/domainZone/getOneDomainZone';
 
 /**
- * .what = resolves a zone reference to a zone id
- * .why = enables DNS operations to work with zone refs by name or id
+ * .what = expands a zone reference to both id and name
+ * .why = enables DNS operations to work with zone refs and produce RefByUnique outputs
  */
-export const resolveZoneRef = async (
+export const expandZoneRef = async (
   zoneRef: Ref<typeof DeclaredCloudflareDomainZone>,
   context: ContextCloudflareApi,
-): Promise<string> => {
-  // if already have id, return it
-  if ('id' in zoneRef && zoneRef.id) return zoneRef.id;
+): Promise<{ id: string; name: string }> => {
+  // if have id, lookup zone to get name
+  if ('id' in zoneRef && zoneRef.id) {
+    const zone = await getOneDomainZone(
+      { by: { primary: { id: zoneRef.id } } },
+      context,
+    );
+    if (!zone) BadRequestError.throw('zone not found for ref', { zoneRef });
+    return { id: zone.id, name: zone.name };
+  }
 
-  // lookup by name
+  // if have name, lookup zone to get id
   if ('name' in zoneRef && zoneRef.name) {
     const zone = await getOneDomainZone(
       { by: { unique: { name: zoneRef.name } } },
       context,
     );
     if (!zone) BadRequestError.throw('zone not found for ref', { zoneRef });
-    return zone.id;
+    return { id: zone.id, name: zone.name };
   }
 
   // invalid ref

@@ -1,5 +1,11 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
+import { refByUnique } from 'domain-objects';
+
 import { getDeclastructCloudflareProvider } from '../../../../../dist/contract/sdks';
+import {
+  DeclaredCloudflareDomainDnsRecord,
+  DeclaredCloudflareDomainZone,
+} from '../../../../../dist/domain.objects';
 
 /**
  * .what = provider configuration for cloudflare acceptance tests
@@ -18,7 +24,7 @@ export const getProviders = async () => [
 
 /**
  * .what = resource declarations for cloudflare acceptance tests
- * .why = defines desired state of resources for testing
+ * .why = defines desired state of resources for test verification
  *
  * .note
  *   - returns empty array when no test zone is configured
@@ -26,8 +32,25 @@ export const getProviders = async () => [
  *   - when CLOUDFLARE_TEST_ZONE_NAME is set, creates test DNS records
  */
 export const getResources = async () => {
-  // return empty resources to test the workflow
-  // the demo account has no zones, so we can't create DNS records
-  // this still verifies: providers work, plan works, apply works (as no-op)
-  return [];
+  // if no test zone configured, return empty to verify workflow only
+  const testZoneName = process.env.CLOUDFLARE_TEST_ZONE_NAME;
+  if (!testZoneName) return [];
+
+  // declare the zone (must already exist in cloudflare)
+  const zone = new DeclaredCloudflareDomainZone({
+    name: testZoneName,
+    type: 'full',
+  });
+
+  // declare a TXT record for acceptance test (safe, no impact on real services)
+  const txtRecord = new DeclaredCloudflareDomainDnsRecord({
+    zone: refByUnique(zone),
+    name: `declastruct-acceptance-test.${testZoneName}`,
+    type: 'TXT',
+    content: `declastruct-test-${Date.now()}`,
+    ttl: 1, // automatic TTL
+    proxied: false, // TXT records cannot be proxied
+  });
+
+  return [zone, txtRecord];
 };

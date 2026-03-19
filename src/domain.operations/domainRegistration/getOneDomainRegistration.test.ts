@@ -138,7 +138,7 @@ describe('getOneDomainRegistration', () => {
 
   given('a query with zone ref', () => {
     when('zone ref is provided', () => {
-      then('it should use the provided zone ref', async () => {
+      then('it should use the provided zone name', async () => {
         const context = getMockedCloudflareApiContext();
         const mockDomain = createMockDomain();
 
@@ -153,12 +153,12 @@ describe('getOneDomainRegistration', () => {
         const result = await getOneDomainRegistration(
           {
             by: { primary: { id: 'example.com' } },
-            zone: { id: 'zone-123' },
+            zone: { name: 'custom-zone.com' },
           },
           context,
         );
 
-        expect(result?.zone).toEqual({ id: 'zone-123' });
+        expect(result?.zone).toEqual({ name: 'custom-zone.com' });
       });
     });
 

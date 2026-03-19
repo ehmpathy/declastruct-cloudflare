@@ -38,10 +38,12 @@ export const DeclaredCloudflareDomainDnsRecordDao = genDeclastructDao<
     delete: async (input, context) => {
       // extract zone from the ref
       const zone = 'zone' in input ? input.zone : undefined;
-      if (!zone || !('id' in input))
-        throw new Error('DNS record delete requires zone and id in ref');
+      if (!zone || !('id' in input) || typeof input.id !== 'string')
+        throw new Error(
+          'DNS record delete requires zone and id (string) in ref',
+        );
       await delDomainDnsRecord(
-        { by: { primary: { id: input.id as string, zone } } },
+        { by: { primary: { id: input.id, zone } } },
         context,
       );
     },

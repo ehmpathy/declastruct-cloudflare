@@ -52,7 +52,7 @@ describe('domainDnsRecord', () => {
       });
 
       when('[t1] getAllDomainDnsRecords is called by zone name', () => {
-        then('it should resolve zone and return records', async () => {
+        then('it should expand zone and return records', async () => {
           // skip if no zones in account
           if (!zonesData.firstZone) return;
 
@@ -79,6 +79,7 @@ describe('domainDnsRecord', () => {
                     zone: { id: zonesData.firstZone.id },
                     name: `nonexistent-test-record-${Date.now()}.${zonesData.firstZone.name}`,
                     type: 'A',
+                    content: '127.0.0.1',
                   },
                 },
               },
@@ -141,6 +142,7 @@ describe('domainDnsRecord', () => {
                   zone: { id: zone.id },
                   name: records[0]!.name,
                   type: records[0]!.type,
+                  content: records[0]!.content,
                 },
               },
             },
@@ -153,7 +155,7 @@ describe('domainDnsRecord', () => {
       });
 
       when('[t2] getOneDomainDnsRecord is called with zone name ref', () => {
-        then('it should resolve zone and return the record', async () => {
+        then('it should expand zone and return the record', async () => {
           const { records, zone } = recordsAndZone;
           // skip if no records
           if (records.length === 0 || !zone) return;
@@ -165,6 +167,7 @@ describe('domainDnsRecord', () => {
                   zone: { name: zone.name },
                   name: records[0]!.name,
                   type: records[0]!.type,
+                  content: records[0]!.content,
                 },
               },
             },

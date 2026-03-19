@@ -1,5 +1,5 @@
 import type { HasReadonly } from 'domain-objects';
-import { UnexpectedCodePathError } from 'helpful-errors';
+import { BadRequestError, UnexpectedCodePathError } from 'helpful-errors';
 import type { PickOne } from 'type-fns';
 
 import type { ContextCloudflareApi } from '@src/domain.objects/ContextCloudflareApi';
@@ -9,8 +9,8 @@ import type {
 } from '@src/domain.objects/DeclaredCloudflareDomainDnsRecord';
 
 import { castIntoDeclaredCloudflareDomainDnsRecord } from './castIntoDeclaredCloudflareDomainDnsRecord';
+import { expandZoneRef } from './expandZoneRef';
 import { getOneDomainDnsRecord } from './getOneDomainDnsRecord';
-import { resolveZoneRef } from './resolveZoneRef';
 
 /**
  * .what = sets a DNS record in cloudflare (findsert or upsert)
@@ -34,17 +34,18 @@ export const setDomainDnsRecord = async (
   if (!recordDesired)
     throw new UnexpectedCodePathError('no record in input', { input });
 
-  // resolve zone id
-  const zoneId = await resolveZoneRef(recordDesired.zone, context);
+  // expand zone ref to get both id and name
+  const zone = await expandZoneRef(recordDesired.zone, context);
 
-  // lookup existing record by unique key
+  // lookup extant record by unique key (zone + name + type + content)
   const recordFound = await getOneDomainDnsRecord(
     {
       by: {
         unique: {
-          zone: { id: zoneId },
+          zone: { name: zone.name },
           name: recordDesired.name,
           type: recordDesired.type,
+          content: recordDesired.content,
         },
       },
     },
@@ -60,13 +61,37 @@ export const setDomainDnsRecord = async (
 
   // if record found
   if (recordFound) {
-    // findsert: return existing
-    if (input.findsert) return recordFound;
+    // findsert: check for attribute diff (content is part of unique key, so not checked here), then return extant
+    if (input.findsert) {
+      const hasTtlDiff = recordDesired.ttl !== recordFound.ttl;
+      const hasProxiedDiff =
+        recordDesired.proxied !== undefined &&
+        recordDesired.proxied !== recordFound.proxied;
+      const hasPriorityDiff =
+        recordDesired.priority !== undefined &&
+        recordDesired.priority !== recordFound.priority;
+
+      if (hasTtlDiff || hasProxiedDiff || hasPriorityDiff)
+        BadRequestError.throw(
+          'cannot findsert record; record exists with different attributes',
+          {
+            recordDesired,
+            recordFound,
+            diffs: {
+              ttl: hasTtlDiff,
+              proxied: hasProxiedDiff,
+              priority: hasPriorityDiff,
+            },
+          },
+        );
+
+      return recordFound;
+    }
 
     // upsert: update the record
     if (input.upsert) {
       const updated = await client.dns.records.update(recordFound.id, {
-        zone_id: zoneId,
+        zone_id: zone.id,
         name: recordDesired.name,
         type: recordDesired.type,
         content: recordDesired.content,
@@ -76,13 +101,15 @@ export const setDomainDnsRecord = async (
         tags: recordDesired.tags,
         priority: recordDesired.priority,
       });
-      return castIntoDeclaredCloudflareDomainDnsRecord(updated, { id: zoneId });
+      return castIntoDeclaredCloudflareDomainDnsRecord(updated, {
+        name: zone.name,
+      });
     }
   }
 
   // create new record
   const created = await client.dns.records.create({
-    zone_id: zoneId,
+    zone_id: zone.id,
     name: recordDesired.name,
     type: recordDesired.type,
     content: recordDesired.content,
@@ -93,5 +120,7 @@ export const setDomainDnsRecord = async (
     priority: recordDesired.priority,
   });
 
-  return castIntoDeclaredCloudflareDomainDnsRecord(created, { id: zoneId });
+  return castIntoDeclaredCloudflareDomainDnsRecord(created, {
+    name: zone.name,
+  });
 };

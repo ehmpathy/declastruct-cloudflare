@@ -21,11 +21,36 @@ const createMockRecord = (overrides: Partial<any> = {}) => ({
   ...overrides,
 });
 
+const createMockZone = (overrides: Partial<any> = {}) => ({
+  id: 'zone-123',
+  name: 'example.com',
+  type: 'full',
+  status: 'active',
+  paused: false,
+  name_servers: ['ns1.cloudflare.com', 'ns2.cloudflare.com'],
+  created_on: '2023-01-01T00:00:00Z',
+  activated_on: '2023-01-01T00:00:00Z',
+  account: { id: 'acc-123', name: 'Test' },
+  development_mode: 0,
+  modified_on: '2023-01-01T00:00:00Z',
+  original_dnshost: null,
+  original_name_servers: null,
+  original_registrar: null,
+  permissions: [],
+  owner: { id: 'owner-123', name: 'Owner', type: 'user' },
+  ...overrides,
+});
+
 describe('delDomainDnsRecord', () => {
   given('a delete by primary key (id)', () => {
     when('the record exists', () => {
       then('it should delete the record and return deleted: true', async () => {
         const context = getMockedCloudflareApiContext();
+        const mockZone = createMockZone();
+
+        context.cloudflare.client.zones = {
+          list: jest.fn().mockResolvedValue({ result: [mockZone] }),
+        } as any;
 
         context.cloudflare.client.dns = {
           records: {
@@ -36,7 +61,11 @@ describe('delDomainDnsRecord', () => {
         } as any;
 
         const result = await delDomainDnsRecord(
-          { by: { primary: { id: 'record-123', zone: { id: 'zone-123' } } } },
+          {
+            by: {
+              primary: { id: 'record-123', zone: { name: 'example.com' } },
+            },
+          },
           context,
         );
 
@@ -50,6 +79,11 @@ describe('delDomainDnsRecord', () => {
     when('the record does not exist (not found error)', () => {
       then('it should return deleted: true (idempotent)', async () => {
         const context = getMockedCloudflareApiContext();
+        const mockZone = createMockZone();
+
+        context.cloudflare.client.zones = {
+          list: jest.fn().mockResolvedValue({ result: [mockZone] }),
+        } as any;
 
         context.cloudflare.client.dns = {
           records: {
@@ -60,7 +94,11 @@ describe('delDomainDnsRecord', () => {
         } as any;
 
         const result = await delDomainDnsRecord(
-          { by: { primary: { id: 'nonexistent', zone: { id: 'zone-123' } } } },
+          {
+            by: {
+              primary: { id: 'nonexistent', zone: { name: 'example.com' } },
+            },
+          },
           context,
         );
 
@@ -71,6 +109,11 @@ describe('delDomainDnsRecord', () => {
     when('delete fails with unexpected error', () => {
       then('it should throw the error', async () => {
         const context = getMockedCloudflareApiContext();
+        const mockZone = createMockZone();
+
+        context.cloudflare.client.zones = {
+          list: jest.fn().mockResolvedValue({ result: [mockZone] }),
+        } as any;
 
         context.cloudflare.client.dns = {
           records: {
@@ -82,7 +125,11 @@ describe('delDomainDnsRecord', () => {
 
         await expect(
           delDomainDnsRecord(
-            { by: { primary: { id: 'record-123', zone: { id: 'zone-123' } } } },
+            {
+              by: {
+                primary: { id: 'record-123', zone: { name: 'example.com' } },
+              },
+            },
             context,
           ),
         ).rejects.toThrow('Permission denied');
@@ -90,11 +137,16 @@ describe('delDomainDnsRecord', () => {
     });
   });
 
-  given('a delete by unique key (zone, name, type)', () => {
+  given('a delete by unique key (zone, name, type, content)', () => {
     when('the record exists', () => {
       then('it should lookup and delete the record', async () => {
         const context = getMockedCloudflareApiContext();
-        const existingRecord = createMockRecord();
+        const mockZone = createMockZone();
+        const recordFound = createMockRecord();
+
+        context.cloudflare.client.zones = {
+          list: jest.fn().mockResolvedValue({ result: [mockZone] }),
+        } as any;
 
         // mock async iterator for list (used by getOneDomainDnsRecord)
         context.cloudflare.client.dns = {
@@ -102,7 +154,7 @@ describe('delDomainDnsRecord', () => {
             get: jest.fn(),
             list: jest.fn().mockReturnValue({
               [Symbol.asyncIterator]: async function* () {
-                yield existingRecord;
+                yield recordFound;
               },
             }),
             delete: jest.fn().mockResolvedValue({ id: 'record-123' }),
@@ -113,9 +165,10 @@ describe('delDomainDnsRecord', () => {
           {
             by: {
               unique: {
-                zone: { id: 'zone-123' },
+                zone: { name: 'example.com' },
                 name: 'www.example.com',
                 type: 'A',
+                content: '192.168.1.1',
               },
             },
           },
@@ -132,9 +185,14 @@ describe('delDomainDnsRecord', () => {
 
     when('the record does not exist', () => {
       then(
-        'it should return deleted: true without calling delete',
+        'it should return deleted: true (no delete call needed)',
         async () => {
           const context = getMockedCloudflareApiContext();
+          const mockZone = createMockZone();
+
+          context.cloudflare.client.zones = {
+            list: jest.fn().mockResolvedValue({ result: [mockZone] }),
+          } as any;
 
           // mock empty async iterator
           context.cloudflare.client.dns = {
@@ -142,7 +200,7 @@ describe('delDomainDnsRecord', () => {
               get: jest.fn(),
               list: jest.fn().mockReturnValue({
                 [Symbol.asyncIterator]: async function* () {
-                  // yields nothing
+                  // yields none
                 },
               }),
               delete: jest.fn(),
@@ -153,9 +211,10 @@ describe('delDomainDnsRecord', () => {
             {
               by: {
                 unique: {
-                  zone: { id: 'zone-123' },
+                  zone: { name: 'example.com' },
                   name: 'nonexistent.example.com',
                   type: 'A',
+                  content: '192.168.1.1',
                 },
               },
             },
@@ -172,30 +231,12 @@ describe('delDomainDnsRecord', () => {
   });
 
   given('a delete with zone ref by name', () => {
-    when('deleting record', () => {
-      then('it should resolve zone id first', async () => {
+    when('delete is called', () => {
+      then('it should expand zone id first', async () => {
         const context = getMockedCloudflareApiContext();
-        const mockZone = {
-          id: 'resolved-zone-id',
-          name: 'example.com',
-          type: 'full',
-          paused: false,
-          status: 'active',
-          name_servers: [],
-          original_name_servers: null,
-          original_registrar: null,
-          created_on: '2023-01-01T00:00:00Z',
-          activated_on: null,
-          account: { id: 'acc-123', name: 'Test' },
-          development_mode: 0,
-          modified_on: '2023-01-01T00:00:00Z',
-          original_dnshost: null,
-          permissions: [],
-          owner: { id: 'owner-123', name: 'Owner', type: 'user' },
-        };
+        const mockZone = createMockZone({ id: 'expanded-zone-id' });
 
         context.cloudflare.client.zones = {
-          get: jest.fn(),
           list: jest.fn().mockResolvedValue({ result: [mockZone] }),
         } as any;
 
@@ -220,7 +261,7 @@ describe('delDomainDnsRecord', () => {
         expect(context.cloudflare.client.zones.list).toHaveBeenCalled();
         expect(
           context.cloudflare.client.dns.records.delete,
-        ).toHaveBeenCalledWith('record-123', { zone_id: 'resolved-zone-id' });
+        ).toHaveBeenCalledWith('record-123', { zone_id: 'expanded-zone-id' });
       });
     });
   });

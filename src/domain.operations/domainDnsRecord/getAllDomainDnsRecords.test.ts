@@ -21,11 +21,32 @@ const createMockRecord = (overrides: Partial<any> = {}) => ({
   ...overrides,
 });
 
+const createMockZone = (overrides: Partial<any> = {}) => ({
+  id: 'zone-123',
+  name: 'example.com',
+  type: 'full',
+  status: 'active',
+  paused: false,
+  name_servers: ['ns1.cloudflare.com', 'ns2.cloudflare.com'],
+  created_on: '2023-01-01T00:00:00Z',
+  activated_on: '2023-01-01T00:00:00Z',
+  account: { id: 'acc-123', name: 'Test' },
+  development_mode: 0,
+  modified_on: '2023-01-01T00:00:00Z',
+  original_dnshost: null,
+  original_name_servers: null,
+  original_registrar: null,
+  permissions: [],
+  owner: { id: 'owner-123', name: 'Owner', type: 'user' },
+  ...overrides,
+});
+
 describe('getAllDomainDnsRecords', () => {
   given('a zone with DNS records', () => {
-    when('queried by zone id', () => {
+    when('queried by zone name', () => {
       then('it should return all records', async () => {
         const context = getMockedCloudflareApiContext();
+        const mockZone = createMockZone();
         const mockRecords = [
           createMockRecord({ id: 'record-1', name: 'www.example.com' }),
           createMockRecord({ id: 'record-2', name: 'api.example.com' }),
@@ -36,6 +57,10 @@ describe('getAllDomainDnsRecords', () => {
             priority: 10,
           }),
         ];
+
+        context.cloudflare.client.zones = {
+          list: jest.fn().mockResolvedValue({ result: [mockZone] }),
+        } as any;
 
         // mock async iterator
         context.cloudflare.client.dns = {
@@ -51,7 +76,7 @@ describe('getAllDomainDnsRecords', () => {
         } as any;
 
         const result = await getAllDomainDnsRecords(
-          { zone: { id: 'zone-123' } },
+          { zone: { name: 'example.com' } },
           context,
         );
 
@@ -67,31 +92,13 @@ describe('getAllDomainDnsRecords', () => {
       });
     });
 
-    when('queried by zone name', () => {
-      then('it should resolve zone id first', async () => {
+    when('zone is expanded from name', () => {
+      then('it should use expanded zone id', async () => {
         const context = getMockedCloudflareApiContext();
-        const mockZone = {
-          id: 'resolved-zone-id',
-          name: 'example.com',
-          type: 'full',
-          paused: false,
-          status: 'active',
-          name_servers: [],
-          original_name_servers: null,
-          original_registrar: null,
-          created_on: '2023-01-01T00:00:00Z',
-          activated_on: null,
-          account: { id: 'acc-123', name: 'Test' },
-          development_mode: 0,
-          modified_on: '2023-01-01T00:00:00Z',
-          original_dnshost: null,
-          permissions: [],
-          owner: { id: 'owner-123', name: 'Owner', type: 'user' },
-        };
+        const mockZone = createMockZone({ id: 'expanded-zone-id' });
         const mockRecords = [createMockRecord()];
 
         context.cloudflare.client.zones = {
-          get: jest.fn(),
           list: jest.fn().mockResolvedValue({ result: [mockZone] }),
         } as any;
 
@@ -116,7 +123,7 @@ describe('getAllDomainDnsRecords', () => {
         expect(context.cloudflare.client.zones.list).toHaveBeenCalled();
         expect(context.cloudflare.client.dns.records.list).toHaveBeenCalledWith(
           {
-            zone_id: 'resolved-zone-id',
+            zone_id: 'expanded-zone-id',
           },
         );
       });
@@ -127,20 +134,25 @@ describe('getAllDomainDnsRecords', () => {
     when('queried', () => {
       then('it should return an empty array', async () => {
         const context = getMockedCloudflareApiContext();
+        const mockZone = createMockZone();
+
+        context.cloudflare.client.zones = {
+          list: jest.fn().mockResolvedValue({ result: [mockZone] }),
+        } as any;
 
         // mock empty async iterator
         context.cloudflare.client.dns = {
           records: {
             list: jest.fn().mockReturnValue({
               [Symbol.asyncIterator]: async function* () {
-                // yields nothing
+                // yields none
               },
             }),
           },
         } as any;
 
         const result = await getAllDomainDnsRecords(
-          { zone: { id: 'zone-123' } },
+          { zone: { name: 'example.com' } },
           context,
         );
 

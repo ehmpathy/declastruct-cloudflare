@@ -110,6 +110,7 @@ describe('declastruct-cloudflare', () => {
                     zone: { id: zonesData.firstZone.id },
                     name: 'nonexistent.test.com',
                     type: 'A',
+                    content: '127.0.0.1',
                   },
                 },
               },

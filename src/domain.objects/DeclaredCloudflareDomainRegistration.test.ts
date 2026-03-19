@@ -15,15 +15,15 @@ describe('DeclaredCloudflareDomainRegistration', () => {
     expect(registration.zone).toEqual({ name: 'example.com' });
   });
 
-  it('should be instantiable with zone ref by id', () => {
+  it('should be instantiable with auto-renew and lock options', () => {
     const registration = new DeclaredCloudflareDomainRegistration({
       id: 'example.com',
       name: 'example.com',
-      zone: { id: 'zone-123' },
+      zone: { name: 'example.com' },
       autoRenew: true,
       locked: true,
     });
-    expect(registration.zone).toEqual({ id: 'zone-123' });
+    expect(registration.zone).toEqual({ name: 'example.com' });
     expect(registration.autoRenew).toEqual(true);
     expect(registration.locked).toEqual(true);
   });

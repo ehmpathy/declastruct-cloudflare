@@ -22,15 +22,15 @@ describe('castIntoDeclaredCloudflareDomainDnsRecord', () => {
       proxiable: true,
     };
 
-    when('cast is called with zone ref by id', () => {
+    when('cast is called with zone ref by name', () => {
       then('it should return a DeclaredCloudflareDomainDnsRecord', () => {
         const result = castIntoDeclaredCloudflareDomainDnsRecord(mockRecord, {
-          id: 'zone-123',
+          name: 'example.com',
         });
 
         expect(result).toBeInstanceOf(DeclaredCloudflareDomainDnsRecord);
         expect(result.id).toEqual('record-123');
-        expect(result.zone).toEqual({ id: 'zone-123' });
+        expect(result.zone).toEqual({ name: 'example.com' });
         expect(result.name).toEqual('www.example.com');
         expect(result.type).toEqual('A');
         expect(result.content).toEqual('192.168.1.1');
@@ -42,16 +42,6 @@ describe('castIntoDeclaredCloudflareDomainDnsRecord', () => {
         expect(result.createdOn).toEqual('2023-01-01T00:00:00Z');
         expect(result.modifiedOn).toEqual('2023-06-01T00:00:00Z');
         expect(result.proxiable).toEqual(true);
-      });
-    });
-
-    when('cast is called with zone ref by name', () => {
-      then('it should use the name-based zone ref', () => {
-        const result = castIntoDeclaredCloudflareDomainDnsRecord(mockRecord, {
-          name: 'example.com',
-        });
-
-        expect(result.zone).toEqual({ name: 'example.com' });
       });
     });
   });
@@ -74,9 +64,9 @@ describe('castIntoDeclaredCloudflareDomainDnsRecord', () => {
     };
 
     when('cast is called', () => {
-      then('it should use defaults for missing fields', () => {
+      then('it should use defaults for absent fields', () => {
         const result = castIntoDeclaredCloudflareDomainDnsRecord(mockRecord, {
-          id: 'zone-456',
+          name: 'minimal.example.com',
         });
 
         expect(result.content).toEqual('');
@@ -107,7 +97,7 @@ describe('castIntoDeclaredCloudflareDomainDnsRecord', () => {
     when('cast is called', () => {
       then('it should correctly cast TXT record type', () => {
         const result = castIntoDeclaredCloudflareDomainDnsRecord(mockRecord, {
-          id: 'zone-txt',
+          name: 'example.com',
         });
 
         expect(result.type).toEqual('TXT');
@@ -137,7 +127,7 @@ describe('castIntoDeclaredCloudflareDomainDnsRecord', () => {
     when('cast is called', () => {
       then('it should include priority field', () => {
         const result = castIntoDeclaredCloudflareDomainDnsRecord(mockRecord, {
-          id: 'zone-mx',
+          name: 'example.com',
         });
 
         expect(result.type).toEqual('MX');

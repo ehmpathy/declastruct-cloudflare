@@ -1,0 +1,14 @@
+org: ehmpathy
+
+extends:
+  - .agent/repo=ehmpathy/role=mechanic/keyrack.yml
+
+env.prod:
+  # - AWS_PROFILE
+  # - OPENAI_API_KEY
+
+env.test:
+  - CLOUDFLARE_ACCOUNT_ID
+  - CLOUDFLARE_API_TOKEN
+  # - AWS_PROFILE
+  # - OPENAI_API_KEY

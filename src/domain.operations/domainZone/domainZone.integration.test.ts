@@ -90,7 +90,7 @@ describe('domainZone', () => {
       });
 
       when('[t2] getOneDomainZone is called by ref with name', () => {
-        then('it should resolve the ref and return the zone', async () => {
+        then('it should expand the ref and return the zone', async () => {
           // skip if no zones in account
           if (!zonesData.firstZone) return;
 
@@ -105,7 +105,7 @@ describe('domainZone', () => {
       });
 
       when('[t3] getOneDomainZone is called by ref with id', () => {
-        then('it should resolve the ref and return the zone', async () => {
+        then('it should expand the ref and return the zone', async () => {
           // skip if no zones in account
           if (!zonesData.firstZone) return;
 

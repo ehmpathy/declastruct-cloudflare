@@ -27,13 +27,14 @@ export const getOneDomainRegistration = async (
 ): Promise<HasReadonly<typeof DeclaredCloudflareDomainRegistration> | null> => {
   const { client, accountId } = context.cloudflare;
 
-  // resolve domain name
+  // determine domain name
   const domainName = input.by.primary?.id ?? input.by.unique?.name;
   if (!domainName)
     throw new UnexpectedCodePathError('no domain name in input', { input });
 
-  // determine zone ref
-  const zoneRef = input.zone ?? { name: domainName };
+  // determine zone name — for registrations, domain name is zone name
+  const zoneName =
+    (input.zone && 'name' in input.zone ? input.zone.name : null) ?? domainName;
 
   // get the domain registration
   try {
@@ -45,14 +46,16 @@ export const getOneDomainRegistration = async (
     if (!domain) return null;
 
     // cloudflare returns partial data for non-registered domains; check for required readonly fields
-    const hasDomainData = (domain as { expires_at?: string }).expires_at;
+    const hasDomainData =
+      typeof domain === 'object' &&
+      domain !== null &&
+      'expires_at' in domain &&
+      domain.expires_at;
     if (!hasDomainData) return null;
 
-    return castIntoDeclaredCloudflareDomainRegistration(
-      domain,
-      domainName,
-      zoneRef,
-    );
+    return castIntoDeclaredCloudflareDomainRegistration(domain, domainName, {
+      name: zoneName,
+    });
   } catch (error) {
     if (!(error instanceof Error)) throw error;
     if (error.message.includes('not found')) return null;

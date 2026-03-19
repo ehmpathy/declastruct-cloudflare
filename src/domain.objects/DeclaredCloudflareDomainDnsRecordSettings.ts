@@ -16,7 +16,7 @@ export interface DeclaredCloudflareDomainDnsRecordSettings {
   ipv6Only?: boolean;
 
   /**
-   * .what = flatten cname to resolve externally
+   * .what = flatten cname at edge for external lookup
    */
   flattenCname?: boolean;
 }

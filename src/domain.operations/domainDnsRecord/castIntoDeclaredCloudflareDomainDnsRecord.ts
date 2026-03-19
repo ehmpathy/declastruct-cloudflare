@@ -1,8 +1,33 @@
 import { type HasReadonly, hasReadonly } from 'domain-objects';
+import { UnexpectedCodePathError } from 'helpful-errors';
 import { assure, isPresent } from 'type-fns';
 
 import { DeclaredCloudflareDomainDnsRecord } from '@src/domain.objects/DeclaredCloudflareDomainDnsRecord';
 import type { DeclaredCloudflareDomainDnsRecordType } from '@src/domain.objects/DeclaredCloudflareDomainDnsRecordType';
+
+const DNS_RECORD_TYPES = [
+  'A',
+  'AAAA',
+  'CNAME',
+  'MX',
+  'NS',
+  'PTR',
+  'TXT',
+  'CAA',
+  'CERT',
+  'DNSKEY',
+  'DS',
+  'HTTPS',
+  'LOC',
+  'NAPTR',
+  'OPENPGPKEY',
+  'SMIMEA',
+  'SRV',
+  'SSHFP',
+  'SVCB',
+  'TLSA',
+  'URI',
+] as const;
 
 /**
  * .what = SDK record shape with common properties across all record types
@@ -25,6 +50,22 @@ interface CloudflareDnsRecordShape {
 }
 
 /**
+ * .what = validates dns record type from API response
+ */
+const validateDnsRecordType = (
+  type: string | undefined,
+): DeclaredCloudflareDomainDnsRecordType => {
+  if (
+    !type ||
+    !DNS_RECORD_TYPES.includes(type as DeclaredCloudflareDomainDnsRecordType)
+  )
+    throw new UnexpectedCodePathError('invalid DNS record type from API', {
+      type,
+    });
+  return type as DeclaredCloudflareDomainDnsRecordType;
+};
+
+/**
  * .what = transforms cloudflare SDK Record to DeclaredCloudflareDomainDnsRecord
  * .why = ensures type safety and readonly field enforcement
  *
@@ -34,7 +75,7 @@ interface CloudflareDnsRecordShape {
  */
 export const castIntoDeclaredCloudflareDomainDnsRecord = (
   rawInput: unknown,
-  zoneRef: { id: string } | { name: string },
+  zoneRef: { name: string },
 ): HasReadonly<typeof DeclaredCloudflareDomainDnsRecord> => {
   const input = rawInput as CloudflareDnsRecordShape;
   return assure(
@@ -42,10 +83,7 @@ export const castIntoDeclaredCloudflareDomainDnsRecord = (
       id: assure(input.id, isPresent),
       zone: zoneRef,
       name: assure(input.name, isPresent),
-      type: assure(
-        input.type,
-        isPresent,
-      ) as DeclaredCloudflareDomainDnsRecordType,
+      type: validateDnsRecordType(input.type),
       content: input.content ?? '',
       ttl: input.ttl ?? 1,
       proxied: input.proxied,
@@ -54,8 +92,8 @@ export const castIntoDeclaredCloudflareDomainDnsRecord = (
       priority: input.priority,
       settings: input.settings
         ? {
-            ipv4Only: (input.settings as { ipv4_only?: boolean }).ipv4_only,
-            ipv6Only: (input.settings as { ipv6_only?: boolean }).ipv6_only,
+            ipv4Only: input.settings.ipv4_only,
+            ipv6Only: input.settings.ipv6_only,
           }
         : undefined,
       createdOn: input.created_on,

@@ -60,7 +60,8 @@ describe('declastruct CLI workflow', () => {
         // read and parse the plan
         const planContent = readFileSync(planFile, 'utf-8');
         const plan = JSON.parse(planContent);
-        return { plan };
+        const hasTestZone = !!process.env.CLOUDFLARE_TEST_ZONE_NAME;
+        return { plan, hasTestZone };
       });
 
       then('creates a valid plan file', () => {
@@ -72,8 +73,14 @@ describe('declastruct CLI workflow', () => {
         expect(Array.isArray(prep.plan.changes)).toBe(true);
       });
 
-      then('plan has no changes (empty resources)', () => {
-        expect(prep.plan.changes).toHaveLength(0);
+      then('plan has expected changes based on resources', () => {
+        if (prep.hasTestZone) {
+          // when test zone configured, expect zone findsert + record create
+          expect(prep.plan.changes.length).toBeGreaterThan(0);
+        } else {
+          // when no test zone, expect no changes (empty resources)
+          expect(prep.plan.changes).toHaveLength(0);
+        }
       });
     });
 

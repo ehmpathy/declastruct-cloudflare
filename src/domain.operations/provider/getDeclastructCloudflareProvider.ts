@@ -24,7 +24,7 @@ export const getDeclastructCloudflareProvider = async (
   },
   context: ContextLogTrail,
 ): Promise<DeclastructCloudflareProvider> => {
-  // resolve credentials from input or env vars
+  // derive credentials from input or env vars
   const credentials = getCredentials(input);
 
   // create cloudflare client
@@ -54,7 +54,7 @@ export const getDeclastructCloudflareProvider = async (
     context: providerContext,
     hooks: {
       beforeAll: async () => {
-        // no setup needed - credentials resolved at instantiation
+        // no setup needed - credentials derived at instantiation
       },
       afterAll: async () => {
         // no teardown needed for cloudflare provider
@@ -64,21 +64,21 @@ export const getDeclastructCloudflareProvider = async (
 };
 
 /**
- * .what = resolves cloudflare credentials from input or env vars
+ * .what = derives cloudflare credentials from input or env vars
  * .why = enables flexible credential resolution
  */
 export const getCredentials = (input: {
   apiToken?: string;
   accountId?: string;
 }): { apiToken: string; accountId: string } => {
-  // resolve api token
+  // derive api token
   const apiToken = input.apiToken ?? process.env.CLOUDFLARE_API_TOKEN;
   if (!apiToken)
     BadRequestError.throw(
       'Cloudflare API token not specified. Set CLOUDFLARE_API_TOKEN env var or pass apiToken option.',
     );
 
-  // resolve account id
+  // derive account id
   const accountId = input.accountId ?? process.env.CLOUDFLARE_ACCOUNT_ID;
   if (!accountId)
     BadRequestError.throw(

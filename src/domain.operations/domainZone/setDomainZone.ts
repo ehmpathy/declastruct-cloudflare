@@ -1,5 +1,5 @@
 import type { HasReadonly } from 'domain-objects';
-import { UnexpectedCodePathError } from 'helpful-errors';
+import { BadRequestError, UnexpectedCodePathError } from 'helpful-errors';
 import type { PickOne } from 'type-fns';
 
 import type { ContextCloudflareApi } from '@src/domain.objects/ContextCloudflareApi';
@@ -48,8 +48,25 @@ export const setDomainZone = async (
 
   // if zone found
   if (zoneFound) {
-    // findsert: return existing
-    if (input.findsert) return zoneFound;
+    // findsert: check for attribute diff, then return extant
+    if (input.findsert) {
+      const hasTypeDiff = zoneDesired.type !== zoneFound.type;
+      const hasPausedDiff =
+        zoneDesired.paused !== undefined &&
+        zoneDesired.paused !== zoneFound.paused;
+
+      if (hasTypeDiff || hasPausedDiff)
+        BadRequestError.throw(
+          'cannot findsert zone; zone exists with different attributes',
+          {
+            zoneDesired,
+            zoneFound,
+            diffs: { type: hasTypeDiff, paused: hasPausedDiff },
+          },
+        );
+
+      return zoneFound;
+    }
 
     // upsert: update the zone
     if (input.upsert) {

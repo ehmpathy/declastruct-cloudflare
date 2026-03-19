@@ -1,5 +1,5 @@
 import type { HasReadonly } from 'domain-objects';
-import { UnexpectedCodePathError } from 'helpful-errors';
+import { BadRequestError, UnexpectedCodePathError } from 'helpful-errors';
 import type { PickOne } from 'type-fns';
 
 import type { ContextCloudflareApi } from '@src/domain.objects/ContextCloudflareApi';
@@ -7,6 +7,7 @@ import type {
   DeclaredCloudflareDomainRegistration,
   DeclaredCloudflareDomainRegistration as DeclaredCloudflareDomainRegistrationInterface,
 } from '@src/domain.objects/DeclaredCloudflareDomainRegistration';
+import { getOneDomainWhoisRecord } from '@src/domain.operations/domainWhoisRecord/getOneDomainWhoisRecord';
 
 import { getOneDomainRegistration } from './getOneDomainRegistration';
 
@@ -39,27 +40,99 @@ export const setDomainRegistration = async (
     context,
   );
 
-  // if not found
+  // if not found, use WHOIS to determine transfer vs purchase guidance
   if (!regFound) {
-    // findsert: registration must exist for findsert to work
-    if (input.findsert)
-      throw new UnexpectedCodePathError(
-        'registration not found for findsert; registrations must be transferred or purchased first',
-        { domainName: regDesired.name },
-      );
+    const whoisRecord = await getOneDomainWhoisRecord(
+      { domain: regDesired.name },
+      context,
+    );
 
-    // upsert: cannot create registrations via API
-    if (input.upsert)
-      throw new UnexpectedCodePathError(
-        'registration not found for upsert; registrations must be transferred or purchased first',
-        { domainName: regDesired.name },
+    // domain is registered elsewhere -> transfer guidance
+    if (whoisRecord?.found && whoisRecord.registrar) {
+      const registrarDisplay =
+        whoisRecord.registrarName ?? whoisRecord.registrar;
+      BadRequestError.throw(
+        `domain "${regDesired.name}" not found in cloudflare registrar
+
+⚠️ transfer required
+   │
+   ├─ at ${registrarDisplay} (current registrar)
+   │  └─ steps
+   │     ├─ 1. disable dnssec
+   │     ├─ 2. disable whois privacy
+   │     ├─ 3. unlock domain
+   │     └─ 4. get auth code
+   │
+   ├─ at cloudflare
+   │  └─ steps
+   │     ├─ 5. enter domain + auth code at https://dash.cloudflare.com/${accountId}/domains/transfer
+   │     ├─ 6. confirm contact
+   │     └─ 7. complete transfer
+   │
+   └─ post-initiation
+      ├─ 8. approve FOA email
+      ├─ 9. wait up to 5 days
+      └─ 10. re-run declastruct apply`,
+        {
+          domain: regDesired.name,
+          registrar: whoisRecord.registrar,
+          registrarName: whoisRecord.registrarName,
+          accountId,
+        },
       );
+    }
+
+    // domain is not registered -> purchase guidance
+    BadRequestError.throw(
+      `domain "${regDesired.name}" not found in cloudflare registrar
+
+⚠️ purchase required
+   │
+   ├─ domain is available for registration
+   │
+   └─ at cloudflare
+      └─ steps
+         ├─ 1. search for "${regDesired.name}" at https://dash.cloudflare.com/${accountId}/domains/register
+         ├─ 2. add to cart
+         ├─ 3. complete purchase
+         └─ 4. re-run declastruct apply`,
+      {
+        domain: regDesired.name,
+        accountId,
+      },
+    );
   }
 
   // registration found
   if (regFound) {
-    // findsert: return existing
-    if (input.findsert) return regFound;
+    // findsert: check for attribute diff, then return extant
+    if (input.findsert) {
+      const hasAutoRenewDiff =
+        regDesired.autoRenew !== undefined &&
+        regDesired.autoRenew !== regFound.autoRenew;
+      const hasLockedDiff =
+        regDesired.locked !== undefined &&
+        regDesired.locked !== regFound.locked;
+      const hasPrivacyDiff =
+        regDesired.privacyProtection !== undefined &&
+        regDesired.privacyProtection !== regFound.privacyProtection;
+
+      if (hasAutoRenewDiff || hasLockedDiff || hasPrivacyDiff)
+        BadRequestError.throw(
+          'cannot findsert registration; registration exists with different attributes',
+          {
+            regDesired,
+            regFound,
+            diffs: {
+              autoRenew: hasAutoRenewDiff,
+              locked: hasLockedDiff,
+              privacyProtection: hasPrivacyDiff,
+            },
+          },
+        );
+
+      return regFound;
+    }
 
     // upsert: update the registration settings
     if (input.upsert) {

@@ -6,8 +6,8 @@ import type { ContextCloudflareApi } from '@src/domain.objects/ContextCloudflare
 import type { DeclaredCloudflareDomainDnsRecordType } from '@src/domain.objects/DeclaredCloudflareDomainDnsRecordType';
 import type { DeclaredCloudflareDomainZone } from '@src/domain.objects/DeclaredCloudflareDomainZone';
 
+import { expandZoneRef } from './expandZoneRef';
 import { getOneDomainDnsRecord } from './getOneDomainDnsRecord';
-import { resolveZoneRef } from './resolveZoneRef';
 
 /**
  * .what = deletes a DNS record from cloudflare
@@ -24,6 +24,7 @@ export const delDomainDnsRecord = async (
         zone: Ref<typeof DeclaredCloudflareDomainZone>;
         name: string;
         type: DeclaredCloudflareDomainDnsRecordType;
+        content: string;
       };
     }>;
   },
@@ -31,13 +32,13 @@ export const delDomainDnsRecord = async (
 ): Promise<{ deleted: boolean }> => {
   const { client } = context.cloudflare;
 
-  // resolve zone id
+  // expand zone ref to get id
   const zoneRef = input.by.primary?.zone ?? input.by.unique?.zone;
   if (!zoneRef)
     throw new UnexpectedCodePathError('no zone ref in input', { input });
-  const zoneId = await resolveZoneRef(zoneRef, context);
+  const zone = await expandZoneRef(zoneRef, context);
 
-  // resolve record id
+  // determine record id
   let recordId: string | null = null;
 
   if (input.by.primary) {
@@ -54,11 +55,13 @@ export const delDomainDnsRecord = async (
   }
 
   if (!recordId)
-    throw new UnexpectedCodePathError('could not resolve record id', { input });
+    throw new UnexpectedCodePathError('could not determine record id', {
+      input,
+    });
 
   // delete the record
   try {
-    await client.dns.records.delete(recordId, { zone_id: zoneId });
+    await client.dns.records.delete(recordId, { zone_id: zone.id });
     return { deleted: true };
   } catch (error) {
     if (!(error instanceof Error)) throw error;

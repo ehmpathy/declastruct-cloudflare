@@ -21,12 +21,37 @@ const createMockRecord = (overrides: Partial<any> = {}) => ({
   ...overrides,
 });
 
+const createMockZone = (overrides: Partial<any> = {}) => ({
+  id: 'zone-123',
+  name: 'example.com',
+  type: 'full',
+  status: 'active',
+  paused: false,
+  name_servers: ['ns1.cloudflare.com', 'ns2.cloudflare.com'],
+  created_on: '2023-01-01T00:00:00Z',
+  activated_on: '2023-01-01T00:00:00Z',
+  account: { id: 'acc-123', name: 'Test' },
+  development_mode: 0,
+  modified_on: '2023-01-01T00:00:00Z',
+  original_dnshost: null,
+  original_name_servers: null,
+  original_registrar: null,
+  permissions: [],
+  owner: { id: 'owner-123', name: 'Owner', type: 'user' },
+  ...overrides,
+});
+
 describe('getOneDomainDnsRecord', () => {
   given('a query by primary key (id)', () => {
     when('the record exists', () => {
       then('it should return the record', async () => {
         const context = getMockedCloudflareApiContext();
+        const mockZone = createMockZone();
         const mockRecord = createMockRecord();
+
+        context.cloudflare.client.zones = {
+          list: jest.fn().mockResolvedValue({ result: [mockZone] }),
+        } as any;
 
         context.cloudflare.client.dns = {
           records: {
@@ -36,7 +61,11 @@ describe('getOneDomainDnsRecord', () => {
         } as any;
 
         const result = await getOneDomainDnsRecord(
-          { by: { primary: { id: 'record-123', zone: { id: 'zone-123' } } } },
+          {
+            by: {
+              primary: { id: 'record-123', zone: { name: 'example.com' } },
+            },
+          },
           context,
         );
 
@@ -53,6 +82,11 @@ describe('getOneDomainDnsRecord', () => {
     when('the record does not exist', () => {
       then('it should return null', async () => {
         const context = getMockedCloudflareApiContext();
+        const mockZone = createMockZone();
+
+        context.cloudflare.client.zones = {
+          list: jest.fn().mockResolvedValue({ result: [mockZone] }),
+        } as any;
 
         context.cloudflare.client.dns = {
           records: {
@@ -62,7 +96,11 @@ describe('getOneDomainDnsRecord', () => {
         } as any;
 
         const result = await getOneDomainDnsRecord(
-          { by: { primary: { id: 'nonexistent', zone: { id: 'zone-123' } } } },
+          {
+            by: {
+              primary: { id: 'nonexistent', zone: { name: 'example.com' } },
+            },
+          },
           context,
         );
 
@@ -71,11 +109,16 @@ describe('getOneDomainDnsRecord', () => {
     });
   });
 
-  given('a query by unique key (zone, name, type)', () => {
+  given('a query by unique key (zone, name, type, content)', () => {
     when('the record exists', () => {
       then('it should return the record', async () => {
         const context = getMockedCloudflareApiContext();
+        const mockZone = createMockZone();
         const mockRecord = createMockRecord();
+
+        context.cloudflare.client.zones = {
+          list: jest.fn().mockResolvedValue({ result: [mockZone] }),
+        } as any;
 
         // mock async iterator for list
         context.cloudflare.client.dns = {
@@ -93,9 +136,10 @@ describe('getOneDomainDnsRecord', () => {
           {
             by: {
               unique: {
-                zone: { id: 'zone-123' },
+                zone: { name: 'example.com' },
                 name: 'www.example.com',
                 type: 'A',
+                content: '192.168.1.1',
               },
             },
           },
@@ -117,6 +161,11 @@ describe('getOneDomainDnsRecord', () => {
     when('the record does not exist', () => {
       then('it should return null', async () => {
         const context = getMockedCloudflareApiContext();
+        const mockZone = createMockZone();
+
+        context.cloudflare.client.zones = {
+          list: jest.fn().mockResolvedValue({ result: [mockZone] }),
+        } as any;
 
         // mock empty async iterator
         context.cloudflare.client.dns = {
@@ -124,7 +173,7 @@ describe('getOneDomainDnsRecord', () => {
             get: jest.fn(),
             list: jest.fn().mockReturnValue({
               [Symbol.asyncIterator]: async function* () {
-                // yields nothing
+                // yields none
               },
             }),
           },
@@ -134,9 +183,10 @@ describe('getOneDomainDnsRecord', () => {
           {
             by: {
               unique: {
-                zone: { id: 'zone-123' },
+                zone: { name: 'example.com' },
                 name: 'nonexistent.example.com',
                 type: 'A',
+                content: '192.168.1.1',
               },
             },
           },
@@ -147,31 +197,13 @@ describe('getOneDomainDnsRecord', () => {
       });
     });
 
-    when('zone ref is by name', () => {
-      then('it should resolve zone id first', async () => {
+    when('zone is expanded from name', () => {
+      then('it should use expanded zone id', async () => {
         const context = getMockedCloudflareApiContext();
-        const mockZone = {
-          id: 'resolved-zone-id',
-          name: 'example.com',
-          type: 'full',
-          paused: false,
-          status: 'active',
-          name_servers: [],
-          original_name_servers: null,
-          original_registrar: null,
-          created_on: '2023-01-01T00:00:00Z',
-          activated_on: null,
-          account: { id: 'acc-123', name: 'Test' },
-          development_mode: 0,
-          modified_on: '2023-01-01T00:00:00Z',
-          original_dnshost: null,
-          permissions: [],
-          owner: { id: 'owner-123', name: 'Owner', type: 'user' },
-        };
+        const mockZone = createMockZone({ id: 'expanded-zone-id' });
         const mockRecord = createMockRecord();
 
         context.cloudflare.client.zones = {
-          get: jest.fn(),
           list: jest.fn().mockResolvedValue({ result: [mockZone] }),
         } as any;
 
@@ -193,6 +225,7 @@ describe('getOneDomainDnsRecord', () => {
                 zone: { name: 'example.com' },
                 name: 'www.example.com',
                 type: 'A',
+                content: '192.168.1.1',
               },
             },
           },
@@ -203,7 +236,7 @@ describe('getOneDomainDnsRecord', () => {
         expect(context.cloudflare.client.zones.list).toHaveBeenCalled();
         expect(context.cloudflare.client.dns.records.list).toHaveBeenCalledWith(
           {
-            zone_id: 'resolved-zone-id',
+            zone_id: 'expanded-zone-id',
             name: { exact: 'www.example.com' },
             type: 'A',
           },

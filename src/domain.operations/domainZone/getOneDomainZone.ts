@@ -1,9 +1,10 @@
 import type { HasReadonly, Ref } from 'domain-objects';
+import { isRefByUnique } from 'domain-objects';
 import { UnexpectedCodePathError } from 'helpful-errors';
 import type { PickOne } from 'type-fns';
 
 import type { ContextCloudflareApi } from '@src/domain.objects/ContextCloudflareApi';
-import type { DeclaredCloudflareDomainZone } from '@src/domain.objects/DeclaredCloudflareDomainZone';
+import { DeclaredCloudflareDomainZone } from '@src/domain.objects/DeclaredCloudflareDomainZone';
 
 import { castIntoDeclaredCloudflareDomainZone } from './castIntoDeclaredCloudflareDomainZone';
 
@@ -25,10 +26,9 @@ export const getOneDomainZone = async (
 
   // handle by ref - check if ref contains unique key (name) or primary key (id)
   if (input.by.ref) {
-    const ref = input.by.ref as { id?: string; name?: string };
-    return 'name' in ref && ref.name
-      ? getOneDomainZone({ by: { unique: { name: ref.name } } }, context)
-      : getOneDomainZone({ by: { primary: { id: ref.id! } } }, context);
+    return isRefByUnique({ of: DeclaredCloudflareDomainZone })(input.by.ref)
+      ? getOneDomainZone({ by: { unique: input.by.ref } }, context)
+      : getOneDomainZone({ by: { primary: input.by.ref } }, context);
   }
 
   // handle get by id (primary)

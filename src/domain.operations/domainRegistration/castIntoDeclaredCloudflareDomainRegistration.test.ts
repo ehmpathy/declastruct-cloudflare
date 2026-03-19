@@ -45,12 +45,12 @@ describe('castIntoDeclaredCloudflareDomainRegistration', () => {
         const result = castIntoDeclaredCloudflareDomainRegistration(
           mockDomain,
           'example.com',
-          { id: 'zone-123' },
+          { name: 'example.com' },
         );
 
         expect(result.id).toEqual('example.com');
         expect(result.name).toEqual('example.com');
-        expect(result.zone).toEqual({ id: 'zone-123' });
+        expect(result.zone).toEqual({ name: 'example.com' });
         expect(result.locked).toEqual(true);
         expect(result.expiresAt).toEqual('2025-01-01T00:00:00Z');
         expect(result.createdAt).toEqual('2023-01-01T00:00:00Z');
@@ -67,7 +67,7 @@ describe('castIntoDeclaredCloudflareDomainRegistration', () => {
         const result = castIntoDeclaredCloudflareDomainRegistration(
           mockDomain,
           'example.com',
-          { id: 'zone-123' },
+          { name: 'example.com' },
         );
 
         expect(result.registrantContact).toEqual({
@@ -91,7 +91,7 @@ describe('castIntoDeclaredCloudflareDomainRegistration', () => {
         const result = castIntoDeclaredCloudflareDomainRegistration(
           mockDomain,
           'example.com',
-          { id: 'zone-123' },
+          { name: 'example.com' },
         );
 
         expect(result.transferIn).toEqual({
@@ -151,7 +151,7 @@ describe('castIntoDeclaredCloudflareDomainRegistration', () => {
         const result = castIntoDeclaredCloudflareDomainRegistration(
           mockDomain,
           'nulls.com',
-          { id: 'zone-456' },
+          { name: 'nulls.com' },
         );
 
         expect(result.registrantContact?.firstName).toEqual('');
@@ -178,7 +178,7 @@ describe('castIntoDeclaredCloudflareDomainRegistration', () => {
         const result = castIntoDeclaredCloudflareDomainRegistration(
           mockDomain,
           'transfer.com',
-          { id: 'zone-789' },
+          { name: 'transfer.com' },
         );
 
         expect(result.transferIn?.acceptFoa).toEqual('unknown');

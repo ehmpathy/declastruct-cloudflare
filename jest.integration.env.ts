@@ -31,16 +31,43 @@ if (
   throw new Error(`integration.test is not targeting stage 'test'`);
 
 /**
- * sanity check that credentials are available for integration tests
+ * .what = supply credentials from keyrack per .agent/keyrack.yml
+ * .why = enables ehmpath clones to supply credentials to integration tests from their terminals
  *
- * usecases
- * - prevent silent test failures due to missing credentials
- * - provide clear instructions on how to set up credentials
+ * priority:
+ *   1. env vars (if already set)
+ *   2. keyrack (per .agent/keyrack.yml env.test keys)
+ *   3. fail-fast with setup instructions
  */
-if (!(process.env.CLOUDFLARE_ACCOUNT_ID || process.env.CLOUDFLARE_API_TOKEN))
+const supplyCredentialsFromKeyrack = (): void => {
+  // already set via env
+  if (process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN)
+    return;
+
+  // try keyrack --for repo (reads .agent/keyrack.yml)
+  try {
+    const result = execSync('npx rhx keyrack get --for repo --env test --json', {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    const creds = JSON.parse(result) as Record<string, string>;
+    for (const [key, value] of Object.entries(creds)) {
+      if (!process.env[key]) process.env[key] = value;
+    }
+    return;
+  } catch {
+    // keyrack not configured, fall through to fail-fast
+  }
+
+  // fail-fast with instructions
   throw new Error(
-    'AWS credentials not set. Run w/ creds via `source .agent/repo=.this/role=any/skills/use.demo.cloudflare.creds.sh && npm run test:integration`',
+    `credentials not found. setup via:
+  1. npx rhachet roles init --repo ehmpathy --role mechanic --init keyrack.ehmpath
+  2. npx rhx keyrack set --key CLOUDFLARE_ACCOUNT_ID --env test
+  3. npx rhx keyrack set --key CLOUDFLARE_API_TOKEN --env test`,
   );
+};
+supplyCredentialsFromKeyrack();
 
 /**
  * .what = verify that the env has sufficient auth to run the tests if aws is used; otherwise, fail fast

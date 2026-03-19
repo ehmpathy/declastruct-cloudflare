@@ -1,4 +1,4 @@
-import { DomainEntity, type Ref } from 'domain-objects';
+import { DomainEntity, type RefByUnique } from 'domain-objects';
 
 import { DeclaredCloudflareDomainDnsRecordSettings } from './DeclaredCloudflareDomainDnsRecordSettings';
 import type { DeclaredCloudflareDomainDnsRecordType } from './DeclaredCloudflareDomainDnsRecordType';
@@ -10,7 +10,7 @@ import { DeclaredCloudflareDomainZone } from './DeclaredCloudflareDomainZone';
  *
  * .identity
  *   - @primary = [id] — assigned by cloudflare on creation
- *   - @unique = [zone, name, type] — composite unique within zone
+ *   - @unique = [zone, name, type, content] — composite unique within zone
  *
  * .note
  *   - same name can have multiple records of different types
@@ -29,7 +29,7 @@ export interface DeclaredCloudflareDomainDnsRecord {
    * .note = @unique (part of composite key)
    * .why = enables declaring records for zones that don't exist yet
    */
-  zone: Ref<typeof DeclaredCloudflareDomainZone>;
+  zone: RefByUnique<typeof DeclaredCloudflareDomainZone>;
 
   /**
    * .what = the dns record name
@@ -46,6 +46,7 @@ export interface DeclaredCloudflareDomainDnsRecord {
 
   /**
    * .what = the record content/value
+   * .note = @unique (part of composite key) — enables multiple records with same (zone, name, type) for load distribution
    */
   content: string;
 
@@ -105,7 +106,7 @@ export class DeclaredCloudflareDomainDnsRecord
   implements DeclaredCloudflareDomainDnsRecord
 {
   public static primary = ['id'] as const;
-  public static unique = ['zone', 'name', 'type'] as const;
+  public static unique = ['zone', 'name', 'type', 'content'] as const;
   public static metadata = ['id'] as const;
   public static readonly = ['createdOn', 'modifiedOn', 'proxiable'] as const;
   public static nested = {

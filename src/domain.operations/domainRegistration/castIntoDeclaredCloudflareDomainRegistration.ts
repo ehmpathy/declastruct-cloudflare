@@ -11,7 +11,6 @@ import type { DeclaredCloudflareDomainTransferIn } from '@src/domain.objects/Dec
  *
  * .note
  *   - domain name is passed via path param, not in response
- *   - auto_renew and privacy are only in update params, not returned
  */
 interface CloudflareDomainShape {
   id?: string;
@@ -21,6 +20,8 @@ interface CloudflareDomainShape {
   current_registrar?: string;
   expires_at?: string;
   locked?: boolean;
+  auto_renew?: boolean;
+  privacy?: boolean;
   registrant_contact?: {
     id?: string;
     first_name?: string | null;
@@ -54,13 +55,15 @@ interface CloudflareDomainShape {
  * .why = ensures type safety and readonly field enforcement
  *
  * .note
+ *   - accepts unknown to handle SDK's DomainGetResponse (typed as unknown)
  *   - domainName passed separately because API uses it as path param
  */
 export const castIntoDeclaredCloudflareDomainRegistration = (
-  input: CloudflareDomainShape,
+  rawInput: unknown,
   domainName: string,
-  zoneRef: { id: string } | { name: string },
+  zoneRef: { name: string },
 ): HasReadonly<typeof DeclaredCloudflareDomainRegistration> => {
+  const input = rawInput as CloudflareDomainShape;
   // map registrant contact if present
   const registrantContact:
     | DeclaredCloudflareDomainRegistrantContact
@@ -107,9 +110,9 @@ export const castIntoDeclaredCloudflareDomainRegistration = (
       id: domainName,
       name: domainName,
       zone: zoneRef,
-      autoRenew: undefined, // not returned from API, only in update params
+      autoRenew: input.auto_renew,
       locked: input.locked,
-      privacyProtection: undefined, // not returned from API, only in update params
+      privacyProtection: input.privacy,
       expiresAt: input.expires_at,
       createdAt: input.created_at,
       updatedAt: input.updated_at,

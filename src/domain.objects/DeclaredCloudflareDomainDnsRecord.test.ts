@@ -18,16 +18,16 @@ describe('DeclaredCloudflareDomainDnsRecord', () => {
     expect(record.ttl).toEqual(300);
   });
 
-  it('should be instantiable with zone ref by id (primary)', () => {
+  it('should be instantiable with proxied option', () => {
     const record = new DeclaredCloudflareDomainDnsRecord({
-      zone: { id: 'zone-123' },
+      zone: { name: 'example.com' },
       name: 'www.example.com',
       type: 'CNAME',
       content: 'example.com',
       ttl: 1,
       proxied: true,
     });
-    expect(record.zone).toEqual({ id: 'zone-123' });
+    expect(record.zone).toEqual({ name: 'example.com' });
     expect(record.proxied).toEqual(true);
   });
 
@@ -60,6 +60,7 @@ describe('DeclaredCloudflareDomainDnsRecord', () => {
       'zone',
       'name',
       'type',
+      'content',
     ]);
     expect(DeclaredCloudflareDomainDnsRecord.metadata).toEqual(['id']);
     expect(DeclaredCloudflareDomainDnsRecord.readonly).toContain('createdOn');

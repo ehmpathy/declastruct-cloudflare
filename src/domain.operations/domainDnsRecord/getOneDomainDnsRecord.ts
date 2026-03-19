@@ -8,7 +8,7 @@ import type { DeclaredCloudflareDomainDnsRecordType } from '@src/domain.objects/
 import type { DeclaredCloudflareDomainZone } from '@src/domain.objects/DeclaredCloudflareDomainZone';
 
 import { castIntoDeclaredCloudflareDomainDnsRecord } from './castIntoDeclaredCloudflareDomainDnsRecord';
-import { resolveZoneRef } from './resolveZoneRef';
+import { expandZoneRef } from './expandZoneRef';
 
 /**
  * .what = gets a DNS record from cloudflare
@@ -22,6 +22,7 @@ export const getOneDomainDnsRecord = async (
         zone: Ref<typeof DeclaredCloudflareDomainZone>;
         name: string;
         type: DeclaredCloudflareDomainDnsRecordType;
+        content: string;
       };
     }>;
   },
@@ -31,12 +32,14 @@ export const getOneDomainDnsRecord = async (
 
   // handle get by id (primary)
   if (input.by.primary) {
-    const zoneId = await resolveZoneRef(input.by.primary.zone, context);
+    const zone = await expandZoneRef(input.by.primary.zone, context);
     try {
       const record = await client.dns.records.get(input.by.primary.id, {
-        zone_id: zoneId,
+        zone_id: zone.id,
       });
-      return castIntoDeclaredCloudflareDomainDnsRecord(record, { id: zoneId });
+      return castIntoDeclaredCloudflareDomainDnsRecord(record, {
+        name: zone.name,
+      });
     } catch (error) {
       if (!(error instanceof Error)) throw error;
       if (error.message.includes('not found')) return null;
@@ -44,20 +47,22 @@ export const getOneDomainDnsRecord = async (
     }
   }
 
-  // handle get by unique (zone + name + type)
+  // handle get by unique (zone + name + type + content)
   if (input.by.unique) {
-    const zoneId = await resolveZoneRef(input.by.unique.zone, context);
-    const records: HasReadonly<typeof DeclaredCloudflareDomainDnsRecord>[] = [];
+    const zone = await expandZoneRef(input.by.unique.zone, context);
     for await (const r of client.dns.records.list({
-      zone_id: zoneId,
+      zone_id: zone.id,
       name: { exact: input.by.unique.name },
       type: input.by.unique.type,
     })) {
-      records.push(
-        castIntoDeclaredCloudflareDomainDnsRecord(r, { id: zoneId }),
-      );
+      // filter by content to complete unique key match
+      if (r.content === input.by.unique.content) {
+        return castIntoDeclaredCloudflareDomainDnsRecord(r, {
+          name: zone.name,
+        });
+      }
     }
-    return records[0] ?? null;
+    return null;
   }
 
   // otherwise, unexpected input

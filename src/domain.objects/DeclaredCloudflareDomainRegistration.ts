@@ -1,4 +1,4 @@
-import { DomainEntity, type Ref } from 'domain-objects';
+import { DomainEntity, type RefByUnique } from 'domain-objects';
 
 import { DeclaredCloudflareDomainRegistrantContact } from './DeclaredCloudflareDomainRegistrantContact';
 import { DeclaredCloudflareDomainTransferIn } from './DeclaredCloudflareDomainTransferIn';
@@ -36,7 +36,7 @@ export interface DeclaredCloudflareDomainRegistration {
    * .what = the parent zone reference
    * .why = enables declaring registrations for zones that don't exist yet
    */
-  zone: Ref<typeof DeclaredCloudflareDomainZone>;
+  zone: RefByUnique<typeof DeclaredCloudflareDomainZone>;
 
   /**
    * .what = whether auto-renewal is enabled
