@@ -14,6 +14,18 @@ Declare the structures you want. Plan to see the changes required. Apply to make
 npm install -s declastruct-cloudflare
 ```
 
+# credentials
+
+see [howto: create cloudflare api token](./.agent/repo=.this/role=any/briefs/howto.cloudflare.api-token.md) for step-by-step instructions.
+
+**required permissions:**
+
+| resource | permission |
+|----------|------------|
+| Zone | Zone:Read, Zone:Edit |
+| DNS | DNS:Read, DNS:Edit |
+| Registrar | Registrar:Read, Registrar:Edit |
+
 # use via cli
 
 ## example.1
@@ -58,4 +70,3 @@ this will apply only the changes declared in the plan - and only if this plan is
 ```sh
 npx declastruct apply --plan provision/github/.temp/plan.json
 ```
-
