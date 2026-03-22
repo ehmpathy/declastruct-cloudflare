@@ -21,15 +21,18 @@ configure these in the cloudflare dashboard when you create a custom token:
 |-----------------------------|-----|
 | Zone - Zone - Edit | create, update, delete zones |
 | Zone - DNS - Edit | create, update, delete dns records |
-| Account - Domain Registration - Edit | update domain settings (autoRenew, privacy, locked) |
+| Account - Registrar: Domains - Read | list, get registrar domains |
+
+**limitation**: Registrar Edit permissions are only available for Enterprise accounts or via Global API key. Non-Enterprise accounts are limited to Read-only access for registrar operations via API tokens.
 
 **note**: account-level scope is required for:
 - zone creation (`client.zones.create()` uses `account.id`)
 - all registrar operations (use `account_id` parameter)
 
 **sources**:
-- [cert-manager cloudflare docs](https://cert-manager.io/docs/configuration/acme/dns01/cloudflare/)
 - [cloudflare api token permissions](https://developers.cloudflare.com/fundamentals/api/reference/permissions/)
+- [registrar api token permissions (community)](https://community.cloudflare.com/t/domain-registrar-api-token-permissions/450561)
+- [register domains with cloudflare registrar api (community)](https://community.cloudflare.com/t/register-and-manage-domains-with-cloudflare-registrar-api/453793)
 
 ---
 
@@ -46,7 +49,7 @@ configure these in the cloudflare dashboard when you create a custom token:
    - **Permissions** (add each row):
      - Zone - Zone - Edit
      - Zone - DNS - Edit
-     - Account - Domain Registration - Edit
+     - Account - Registrar: Domains - Read
    - **Account Resources**: Include > [your account]
    - **Zone Resources**: Include > All zones (or specific test zone)
    - **TTL**: optional, set expiration if desired
@@ -81,7 +84,7 @@ if you only need read operations (getOne, getAll):
 
 - Zone - Zone - Read
 - Zone - DNS - Read
-- Account - Domain Registration - Read
+- Account - Registrar: Domains - Read
 
 ---
 

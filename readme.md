@@ -22,7 +22,7 @@ see [howto: create cloudflare api token](./.agent/repo=.this/role=any/briefs/how
 
 - Zone - Zone - Edit
 - Zone - DNS - Edit
-- Account - Domain Registration - Edit
+- Account - Registrar: Domains - Read (Edit is Enterprise-only)
 
 # use via cli
 
