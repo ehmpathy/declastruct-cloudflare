@@ -18,13 +18,11 @@ npm install -s declastruct-cloudflare
 
 see [howto: create cloudflare api token](./.agent/repo=.this/role=any/briefs/howto.cloudflare.api-token.md) for step-by-step instructions.
 
-**required permissions:**
+**required permissions** (as shown in cloudflare dashboard):
 
-| category | permission | access |
-|----------|------------|--------|
-| Zone | Zone | Edit |
-| Zone | DNS | Edit |
-| Account | Cloudflare Registrar | Edit |
+- Zone - Zone - Edit
+- Zone - DNS - Edit
+- Account - Domain Registration - Edit
 
 # use via cli
 

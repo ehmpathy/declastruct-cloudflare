@@ -17,15 +17,19 @@ the cloudflare sdk requires an api token to authenticate. the token must have sp
 
 configure these in the cloudflare dashboard when you create a custom token:
 
-| category | permission | access | why |
-|----------|------------|--------|-----|
-| Zone | Zone | Edit | create, update, delete zones |
-| Zone | DNS | Edit | create, update, delete dns records |
-| Account | Cloudflare Registrar | Edit | update domain settings (autoRenew, privacy, locked) |
+| permission (as shown in UI) | why |
+|-----------------------------|-----|
+| Zone - Zone - Edit | create, update, delete zones |
+| Zone - DNS - Edit | create, update, delete dns records |
+| Account - Domain Registration - Edit | update domain settings (autoRenew, privacy, locked) |
 
 **note**: account-level scope is required for:
 - zone creation (`client.zones.create()` uses `account.id`)
 - all registrar operations (use `account_id` parameter)
+
+**sources**:
+- [cert-manager cloudflare docs](https://cert-manager.io/docs/configuration/acme/dns01/cloudflare/)
+- [cloudflare api token permissions](https://developers.cloudflare.com/fundamentals/api/reference/permissions/)
 
 ---
 
@@ -39,10 +43,10 @@ configure these in the cloudflare dashboard when you create a custom token:
 
 4. configure token:
    - **Token name**: `declastruct-cloudflare` (or similar)
-   - **Permissions**:
-     - Account > Cloudflare Registrar Domains > Edit
-     - Zone > Zone > Edit
-     - Zone > DNS > Edit
+   - **Permissions** (add each row):
+     - Zone - Zone - Edit
+     - Zone - DNS - Edit
+     - Account - Domain Registration - Edit
    - **Account Resources**: Include > [your account]
    - **Zone Resources**: Include > All zones (or specific test zone)
    - **TTL**: optional, set expiration if desired
@@ -73,11 +77,11 @@ export CLOUDFLARE_ACCOUNT_ID="your-account-id-here"
 
 ## minimal permissions (read-only)
 
-if only running read operations (getOne, getAll):
+if you only need read operations (getOne, getAll):
 
-- Zone > Zone > Read
-- Zone > DNS > Read
-- Account > Cloudflare Registrar Domains > Read
+- Zone - Zone - Read
+- Zone - DNS - Read
+- Account - Domain Registration - Read
 
 ---
 
