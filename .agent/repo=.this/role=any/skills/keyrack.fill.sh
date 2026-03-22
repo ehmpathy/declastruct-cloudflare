@@ -96,6 +96,8 @@ echo "   ├─ ehmpath keyrack: found ✓"
 REQUIRED_KEYS=(
   "CLOUDFLARE_ACCOUNT_ID"
   "CLOUDFLARE_API_TOKEN"
+  "CLOUDFLARE_API_KEY"
+  "CLOUDFLARE_EMAIL"
 )
 
 echo "   │"
