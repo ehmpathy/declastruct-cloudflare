@@ -16,7 +16,7 @@ npm install -s declastruct-cloudflare
 
 # credentials
 
-see [howto: create cloudflare api token](./.agent/repo=.this/role=any/briefs/howto.cloudflare.api-token.md) for step-by-step instructions.
+see [howto: cloudflare api tokens and keys](./.agent/repo=.this/role=any/briefs/howto.cloudflare.api-tokens-and-keys.md) for step-by-step instructions.
 
 **required permissions** (as shown in cloudflare dashboard):
 

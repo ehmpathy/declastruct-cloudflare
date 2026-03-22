@@ -1,15 +1,15 @@
-# howto: create cloudflare api token
+# howto: cloudflare api tokens and keys
 
 ## .what
 
-create a cloudflare api token with permissions for declastruct domain management operations.
+configure cloudflare authentication for declastruct domain management operations.
 
 ## .why
 
-the cloudflare sdk requires an api token to authenticate. the token must have specific permissions to:
-- manage zones (create, read, update, delete)
-- manage dns records (create, read, update, delete)
-- manage registrar domains (read, update settings)
+the cloudflare sdk requires authentication. we prefer API tokens (scoped permissions), but some operations require Global API key as a fallback:
+
+- **API Token**: zones, dns records, registrar read
+- **Global API Key**: registrar updates (auto_renew, locked, privacy) on non-Enterprise accounts
 
 ---
 
@@ -71,10 +71,41 @@ export CLOUDFLARE_API_TOKEN="your-api-token-here"
 export CLOUDFLARE_ACCOUNT_ID="your-account-id-here"
 ```
 
-**finding account id**:
+**where to find account id**:
 - go to any zone in cloudflare dashboard
 - account id is in the right sidebar under "API" section
 - or: url format is `dash.cloudflare.com/<account-id>/...`
+
+---
+
+## global api key (fallback for registrar updates)
+
+API tokens cannot update registrar settings (auto_renew, locked, privacy) on non-Enterprise accounts. if you need to update registrar domains, use Global API key as a fallback.
+
+**to get your Global API key:**
+
+1. navigate to https://dash.cloudflare.com/profile/api-tokens
+2. scroll to **API Keys** section
+3. click **View** next to **Global API Key**
+4. copy the key
+
+**environment variables with Global API key:**
+
+```bash
+# preferred: API token (for zones, dns)
+export CLOUDFLARE_API_TOKEN="your-api-token-here"
+export CLOUDFLARE_ACCOUNT_ID="your-account-id-here"
+
+# fallback: Global API key (for registrar updates)
+export CLOUDFLARE_API_KEY="your-global-api-key-here"
+export CLOUDFLARE_EMAIL="your-cloudflare-email@example.com"
+```
+
+**security note**: Global API key has full account access. prefer API tokens where possible; only use Global API key for operations that require it (registrar updates).
+
+**sources**:
+- [get global api key](https://developers.cloudflare.com/fundamentals/api/get-started/keys/)
+- [registrar domains update api](https://developers.cloudflare.com/api/resources/registrar/subresources/domains/methods/update/)
 
 ---
 
