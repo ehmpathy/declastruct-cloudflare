@@ -20,11 +20,11 @@ see [howto: create cloudflare api token](./.agent/repo=.this/role=any/briefs/how
 
 **required permissions:**
 
-| resource | permission |
-|----------|------------|
-| Zone | Zone:Read, Zone:Edit |
-| DNS | DNS:Read, DNS:Edit |
-| Registrar | Registrar:Read, Registrar:Edit |
+| category | permission | access |
+|----------|------------|--------|
+| Zone | Zone | Edit |
+| Zone | DNS | Edit |
+| Account | Cloudflare Registrar | Edit |
 
 # use via cli
 

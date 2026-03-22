@@ -15,17 +15,16 @@ the cloudflare sdk requires an api token to authenticate. the token must have sp
 
 ## required permissions
 
-| resource | permission | why |
-|----------|------------|-----|
-| Zone | Zone:Edit | create, update, delete zones |
-| Zone | Zone:Read | list, get zones |
-| DNS | DNS:Edit | create, update, delete dns records |
-| DNS | DNS:Read | list, get dns records |
-| Registrar | Registrar:Edit | update domain settings (autoRenew, privacy, locked) |
-| Registrar | Registrar:Read | list, get registrar domains |
+configure these in the cloudflare dashboard when you create a custom token:
+
+| category | permission | access | why |
+|----------|------------|--------|-----|
+| Zone | Zone | Edit | create, update, delete zones |
+| Zone | DNS | Edit | create, update, delete dns records |
+| Account | Cloudflare Registrar | Edit | update domain settings (autoRenew, privacy, locked) |
 
 **note**: account-level scope is required for:
-- creating new zones (`client.zones.create()` uses `account.id`)
+- zone creation (`client.zones.create()` uses `account.id`)
 - all registrar operations (use `account_id` parameter)
 
 ---
