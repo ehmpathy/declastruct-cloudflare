@@ -28,18 +28,17 @@ this creates:
 
 ### configure repo-specific keys
 
-each repo declares its required keys in `.agent/keyrack.yml` and provides a fill skill:
+each repo declares its required keys in `.agent/keyrack.yml`. fill credentials via:
 
 ```sh
-./.agent/repo=.this/role=any/skills/keyrack.fill.sh --env test
+rhx keyrack fill --owner ehmpath --env test
 ```
 
-the fill skill:
-1. verifies ehmpath keyrack exists
+the fill command:
+1. reads required keys from `.agent/keyrack.yml`
 2. prompts for each required key (if not already configured)
-3. for test env: stores in both your keyrack and ehmpath keyrack
-4. for prod env: stores in your keyrack only (agents do not have prod access)
-5. verifies keys can be fetched back
+3. stores in ehmpath keyrack (shared with agents)
+4. verifies keys can be fetched back
 
 ### integration test setup
 
@@ -99,10 +98,10 @@ when tokens expire:
 
 ```sh
 # refresh specific key
-./.agent/repo=.this/role=any/skills/keyrack.fill.sh --env test --refresh CLOUDFLARE_API_TOKEN
+rhx keyrack fill --owner ehmpath --env test --refresh CLOUDFLARE_API_TOKEN
 
 # refresh all keys
-./.agent/repo=.this/role=any/skills/keyrack.fill.sh --env test --refresh @all
+rhx keyrack fill --owner ehmpath --env test --refresh @all
 ```
 
 ## .envs
@@ -134,6 +133,6 @@ keyrack provides multiple isolation layers to prevent credential leaks:
 
 ## .see also
 
-- `.agent/repo=.this/role=any/skills/keyrack.fill.sh` — fill keyrack for this repo
-- `npx rhx keyrack --help` — full keyrack documentation
+- `rhx keyrack fill --help` — fill keyrack command
+- `rhx keyrack --help` — full keyrack documentation
 - `.agent/repo=ehmpathy/role=mechanic/inits/keyrack.ehmpath.sh` — ehmpath keyrack setup

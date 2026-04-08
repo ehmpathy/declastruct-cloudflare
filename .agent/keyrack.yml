@@ -4,13 +4,9 @@ extends:
   - .agent/repo=ehmpathy/role=mechanic/keyrack.yml
 
 env.prod:
-  # - AWS_PROFILE
-  # - OPENAI_API_KEY
+  - CLOUDFLARE_ACCOUNT_ID
+  - CLOUDFLARE_API_TOKEN
 
 env.test:
   - CLOUDFLARE_ACCOUNT_ID
   - CLOUDFLARE_API_TOKEN
-  - CLOUDFLARE_API_KEY    # global api key (fallback for registrar updates)
-  - CLOUDFLARE_EMAIL      # email for global api key auth
-  # - AWS_PROFILE
-  # - OPENAI_API_KEY

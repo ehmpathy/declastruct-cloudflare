@@ -10,6 +10,7 @@ import { getOneDomainWhoisRecord } from './getOneDomainWhoisRecord';
  *
  * .note
  *   - requires CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID env vars
+ *   - requires Intel permissions on the API token (Account - Intel - Read)
  *   - tests are read-only (WHOIS is a lookup, not a mutation)
  */
 describe('domainWhoisRecord', () => {

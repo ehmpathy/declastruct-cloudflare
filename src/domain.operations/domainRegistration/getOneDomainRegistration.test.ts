@@ -185,6 +185,56 @@ describe('getOneDomainRegistration', () => {
     });
   });
 
+  given('domain is registered elsewhere (not cloudflare)', () => {
+    when('current_registrar is another registrar', () => {
+      then('it should return null', async () => {
+        const context = getMockedCloudflareApiContext();
+        const mockDomain = createMockDomain({
+          current_registrar: 'Squarespace Domains',
+        });
+
+        context.cloudflare.client.registrar = {
+          domains: {
+            get: jest.fn().mockResolvedValue(mockDomain),
+            list: jest.fn(),
+            update: jest.fn(),
+          },
+        } as any;
+
+        const result = await getOneDomainRegistration(
+          { by: { primary: { id: 'example.com' } } },
+          context,
+        );
+
+        expect(result).toBeNull();
+      });
+    });
+
+    when('current_registrar is godaddy', () => {
+      then('it should return null', async () => {
+        const context = getMockedCloudflareApiContext();
+        const mockDomain = createMockDomain({
+          current_registrar: 'GoDaddy.com, LLC',
+        });
+
+        context.cloudflare.client.registrar = {
+          domains: {
+            get: jest.fn().mockResolvedValue(mockDomain),
+            list: jest.fn(),
+            update: jest.fn(),
+          },
+        } as any;
+
+        const result = await getOneDomainRegistration(
+          { by: { unique: { name: 'example.com' } } },
+          context,
+        );
+
+        expect(result).toBeNull();
+      });
+    });
+  });
+
   given('an unexpected error', () => {
     when('error is not "not found"', () => {
       then('it should rethrow the error', async () => {

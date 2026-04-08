@@ -42,8 +42,10 @@ describe('castIntoDeclaredCloudflareDomainZone', () => {
           'ns1.cloudflare.com',
           'ns2.cloudflare.com',
         ]);
-        expect(result.originalNameservers).toEqual(['ns1.original.com']);
-        expect(result.originalRegistrar).toEqual('Original Registrar Inc');
+        expect(result.original).toEqual({
+          nameservers: ['ns1.original.com'],
+          registrar: 'Original Registrar Inc',
+        });
         expect(result.createdOn).toEqual('2023-01-01T00:00:00Z');
         expect(result.activatedOn).toEqual('2023-01-02T00:00:00Z');
       });
@@ -73,12 +75,11 @@ describe('castIntoDeclaredCloudflareDomainZone', () => {
     };
 
     when('cast is called', () => {
-      then('it should handle null values by converting to undefined', () => {
+      then('it should keep null values as null', () => {
         const result = castIntoDeclaredCloudflareDomainZone(mockZone);
 
-        expect(result.originalNameservers).toBeUndefined();
-        expect(result.originalRegistrar).toBeUndefined();
-        expect(result.activatedOn).toBeUndefined();
+        expect(result.original).toBeNull();
+        expect(result.activatedOn).toBeNull();
       });
     });
   });

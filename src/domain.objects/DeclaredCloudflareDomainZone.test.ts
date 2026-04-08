@@ -5,6 +5,8 @@ describe('DeclaredCloudflareDomainZone', () => {
     const zone = new DeclaredCloudflareDomainZone({
       name: 'example.com',
       type: 'full',
+      original: null,
+      activatedOn: null,
     });
     expect(zone.name).toEqual('example.com');
     expect(zone.type).toEqual('full');
@@ -18,8 +20,10 @@ describe('DeclaredCloudflareDomainZone', () => {
       paused: false,
       status: 'active',
       nameServers: ['ns1.cloudflare.com', 'ns2.cloudflare.com'],
-      originalNameservers: ['ns1.original.com', 'ns2.original.com'],
-      originalRegistrar: 'Original Registrar Inc',
+      original: {
+        nameservers: ['ns1.original.com', 'ns2.original.com'],
+        registrar: 'Original Registrar Inc',
+      },
       createdOn: '2024-01-01T00:00:00Z',
       activatedOn: '2024-01-02T00:00:00Z',
     });
@@ -37,12 +41,15 @@ describe('DeclaredCloudflareDomainZone', () => {
     expect(DeclaredCloudflareDomainZone.metadata).toEqual(['id']);
     expect(DeclaredCloudflareDomainZone.readonly).toContain('status');
     expect(DeclaredCloudflareDomainZone.readonly).toContain('nameServers');
+    expect(DeclaredCloudflareDomainZone.readonly).toContain('original');
   });
 
   it('should support partial zone type', () => {
     const zone = new DeclaredCloudflareDomainZone({
       name: 'partial.example.com',
       type: 'partial',
+      original: null,
+      activatedOn: null,
     });
     expect(zone.type).toEqual('partial');
   });
@@ -51,6 +58,8 @@ describe('DeclaredCloudflareDomainZone', () => {
     const zone = new DeclaredCloudflareDomainZone({
       name: 'secondary.example.com',
       type: 'secondary',
+      original: null,
+      activatedOn: null,
     });
     expect(zone.type).toEqual('secondary');
   });

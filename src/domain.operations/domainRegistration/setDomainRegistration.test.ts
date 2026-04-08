@@ -2,6 +2,7 @@ import { BadRequestError, UnexpectedCodePathError } from 'helpful-errors';
 import { getError, given, then, when } from 'test-fns';
 
 import { getMockedCloudflareApiContext } from '@src/.test/getMockedCloudflareApiContext';
+import { HumanGuidanceError } from '@src/domain.objects/HumanGuidanceError';
 
 import { setDomainRegistration } from './setDomainRegistration';
 
@@ -95,11 +96,74 @@ describe('setDomainRegistration', () => {
       });
     });
 
+    when('the registration does not exist and zone is not active', () => {
+      then(
+        'it should throw a HumanGuidanceError with nameserver guidance',
+        async () => {
+          const context = getMockedCloudflareApiContext();
+
+          context.cloudflare.client.registrar = {
+            domains: {
+              get: jest.fn().mockRejectedValue(new Error('Domain not found')),
+              list: jest.fn(),
+              update: jest.fn(),
+            },
+          } as any;
+
+          // mock zone as pending (not active)
+          context.cloudflare.client.zones = {
+            get: jest.fn(),
+            list: jest.fn().mockResolvedValue({
+              result: [
+                {
+                  id: 'zone-123',
+                  name: 'pending-domain.com',
+                  status: 'pending',
+                  paused: false,
+                  type: 'full',
+                  name_servers: [
+                    'gannon.ns.cloudflare.com',
+                    'tia.ns.cloudflare.com',
+                  ],
+                  created_on: '2023-01-01T00:00:00Z',
+                  activated_on: null,
+                  original_name_servers: null,
+                  original_registrar: null,
+                },
+              ],
+            }),
+            create: jest.fn(),
+            delete: jest.fn(),
+            edit: jest.fn(),
+          } as any;
+
+          const error = await getError(
+            setDomainRegistration(
+              {
+                findsert: {
+                  id: 'pending-domain.com',
+                  name: 'pending-domain.com',
+                  zone: { name: 'pending-domain.com' },
+                },
+              },
+              context,
+            ),
+          );
+
+          expect(error).toBeInstanceOf(HumanGuidanceError);
+          expect(error.message).toContain('zone awaits nameserver delegation');
+          expect(error.message).toContain('nameserver update required');
+          expect(error.message).toContain('current status: pending');
+          expect(error.message).toContain('gannon.ns.cloudflare.com');
+        },
+      );
+    });
+
     when(
-      'the registration does not exist and WHOIS shows registered elsewhere',
+      'the registration does not exist and domain is within 60-day lock',
       () => {
         then(
-          'it should throw a BadRequestError with transfer guidance',
+          'it should throw a HumanGuidanceError with 60-day lock guidance',
           async () => {
             const context = getMockedCloudflareApiContext();
 
@@ -109,6 +173,114 @@ describe('setDomainRegistration', () => {
                 list: jest.fn(),
                 update: jest.fn(),
               },
+            } as any;
+
+            // mock zone as active (so we proceed to WHOIS check)
+            context.cloudflare.client.zones = {
+              get: jest.fn(),
+              list: jest.fn().mockResolvedValue({
+                result: [
+                  {
+                    id: 'zone-123',
+                    name: 'new-domain.com',
+                    status: 'active',
+                    paused: false,
+                    type: 'full',
+                    name_servers: ['ns1.cloudflare.com', 'ns2.cloudflare.com'],
+                    created_on: '2023-01-01T00:00:00Z',
+                    activated_on: '2023-01-01T00:00:00Z',
+                    original_name_servers: null,
+                    original_registrar: null,
+                  },
+                ],
+              }),
+              create: jest.fn(),
+              delete: jest.fn(),
+              edit: jest.fn(),
+            } as any;
+
+            // mock WHOIS with recent created_date (within 60 days)
+            const recentDate = new Date();
+            recentDate.setDate(recentDate.getDate() - 30); // 30 days ago
+            context.cloudflare.client.intel = {
+              whois: {
+                get: jest.fn().mockResolvedValue({
+                  domain: 'new-domain.com',
+                  found: true,
+                  dnssec: false,
+                  extension: 'com',
+                  punycode: 'new-domain.com',
+                  nameservers: ['ns1.squarespace.com'],
+                  registrant: 'REDACTED',
+                  registrar: 'SQUARESPACE DOMAINS II LLC',
+                  registrar_name: 'Squarespace',
+                  created_date: recentDate.toISOString(),
+                }),
+              },
+            } as any;
+
+            const error = await getError(
+              setDomainRegistration(
+                {
+                  findsert: {
+                    id: 'new-domain.com',
+                    name: 'new-domain.com',
+                    zone: { name: 'new-domain.com' },
+                  },
+                },
+                context,
+              ),
+            );
+
+            expect(error).toBeInstanceOf(HumanGuidanceError);
+            expect(error.message).toContain('cannot be transferred yet');
+            expect(error.message).toContain('60-day lock active');
+            expect(error.message).toContain('Squarespace');
+            expect(error.message).toContain('30 days ago');
+            expect(error.message).toContain('30 days');
+          },
+        );
+      },
+    );
+
+    when(
+      'the registration does not exist and WHOIS shows registered elsewhere',
+      () => {
+        then(
+          'it should throw a HumanGuidanceError with transfer guidance',
+          async () => {
+            const context = getMockedCloudflareApiContext();
+
+            context.cloudflare.client.registrar = {
+              domains: {
+                get: jest.fn().mockRejectedValue(new Error('Domain not found')),
+                list: jest.fn(),
+                update: jest.fn(),
+              },
+            } as any;
+
+            // mock zone as active (so we proceed to WHOIS check)
+            context.cloudflare.client.zones = {
+              get: jest.fn(),
+              list: jest.fn().mockResolvedValue({
+                result: [
+                  {
+                    id: 'zone-123',
+                    name: 'nonexistent.com',
+                    status: 'active',
+                    paused: false,
+                    type: 'full',
+                    name_servers: ['ns1.cloudflare.com', 'ns2.cloudflare.com'],
+                    created_on: '2023-01-01T00:00:00Z',
+                    activated_on: '2023-01-01T00:00:00Z',
+                    original_name_servers: null,
+                    original_registrar: null,
+                  },
+                ],
+              }),
+              create: jest.fn(),
+              delete: jest.fn(),
+              edit: jest.fn(),
             } as any;
 
             context.cloudflare.client.intel = {
@@ -140,7 +312,7 @@ describe('setDomainRegistration', () => {
               ),
             );
 
-            expect(error).toBeInstanceOf(BadRequestError);
+            expect(error).toBeInstanceOf(HumanGuidanceError);
             expect(error.message).toContain(
               'not found in cloudflare registrar',
             );
@@ -157,7 +329,7 @@ describe('setDomainRegistration', () => {
       'the registration does not exist and WHOIS shows not registered',
       () => {
         then(
-          'it should throw a BadRequestError with purchase guidance',
+          'it should throw a HumanGuidanceError with purchase guidance',
           async () => {
             const context = getMockedCloudflareApiContext();
 
@@ -167,6 +339,30 @@ describe('setDomainRegistration', () => {
                 list: jest.fn(),
                 update: jest.fn(),
               },
+            } as any;
+
+            // mock zone as active (so we proceed to WHOIS check)
+            context.cloudflare.client.zones = {
+              get: jest.fn(),
+              list: jest.fn().mockResolvedValue({
+                result: [
+                  {
+                    id: 'zone-123',
+                    name: 'available-domain.xyz',
+                    status: 'active',
+                    paused: false,
+                    type: 'full',
+                    name_servers: ['ns1.cloudflare.com', 'ns2.cloudflare.com'],
+                    created_on: '2023-01-01T00:00:00Z',
+                    activated_on: '2023-01-01T00:00:00Z',
+                    original_name_servers: null,
+                    original_registrar: null,
+                  },
+                ],
+              }),
+              create: jest.fn(),
+              delete: jest.fn(),
+              edit: jest.fn(),
             } as any;
 
             context.cloudflare.client.intel = {
@@ -197,7 +393,7 @@ describe('setDomainRegistration', () => {
               ),
             );
 
-            expect(error).toBeInstanceOf(BadRequestError);
+            expect(error).toBeInstanceOf(HumanGuidanceError);
             expect(error.message).toContain(
               'not found in cloudflare registrar',
             );
@@ -260,7 +456,7 @@ describe('setDomainRegistration', () => {
 
     when('the registration does not exist', () => {
       then(
-        'it should throw a BadRequestError (cannot create via API)',
+        'it should throw a HumanGuidanceError (cannot create via API)',
         async () => {
           const context = getMockedCloudflareApiContext();
 
@@ -270,6 +466,30 @@ describe('setDomainRegistration', () => {
               list: jest.fn(),
               update: jest.fn(),
             },
+          } as any;
+
+          // mock zone as active (so we proceed to WHOIS check)
+          context.cloudflare.client.zones = {
+            get: jest.fn(),
+            list: jest.fn().mockResolvedValue({
+              result: [
+                {
+                  id: 'zone-123',
+                  name: 'nonexistent.com',
+                  status: 'active',
+                  paused: false,
+                  type: 'full',
+                  name_servers: ['ns1.cloudflare.com', 'ns2.cloudflare.com'],
+                  created_on: '2023-01-01T00:00:00Z',
+                  activated_on: '2023-01-01T00:00:00Z',
+                  original_name_servers: null,
+                  original_registrar: null,
+                },
+              ],
+            }),
+            create: jest.fn(),
+            delete: jest.fn(),
+            edit: jest.fn(),
           } as any;
 
           context.cloudflare.client.intel = {
@@ -301,7 +521,7 @@ describe('setDomainRegistration', () => {
             ),
           );
 
-          expect(error).toBeInstanceOf(BadRequestError);
+          expect(error).toBeInstanceOf(HumanGuidanceError);
           expect(error.message).toContain('not found in cloudflare registrar');
         },
       );

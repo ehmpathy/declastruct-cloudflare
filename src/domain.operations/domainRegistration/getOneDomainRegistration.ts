@@ -53,6 +53,17 @@ export const getOneDomainRegistration = async (
       domain.expires_at;
     if (!hasDomainData) return null;
 
+    // cloudflare API returns registration data for ANY domain (from WHOIS)
+    // we only want domains actually registered with cloudflare registrar
+    const currentRegistrar =
+      typeof domain === 'object' &&
+      domain !== null &&
+      'current_registrar' in domain
+        ? String(domain.current_registrar).toLowerCase()
+        : null;
+    const isCloudflareRegistrar = currentRegistrar === 'cloudflare';
+    if (!isCloudflareRegistrar) return null;
+
     return castIntoDeclaredCloudflareDomainRegistration(domain, domainName, {
       name: zoneName,
     });

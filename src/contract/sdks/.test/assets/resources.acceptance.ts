@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { refByUnique } from 'domain-objects';
 
-import { getDeclastructCloudflareProvider } from '../../../../../dist/contract/sdks';
 import {
   DeclaredCloudflareDomainDnsRecord,
   DeclaredCloudflareDomainZone,
-} from '../../../../../dist/domain.objects';
+  getDeclastructCloudflareProvider,
+} from '../../../../../dist/contract/sdks';
 
 /**
  * .what = provider configuration for cloudflare acceptance tests

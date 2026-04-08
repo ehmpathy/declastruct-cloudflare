@@ -1,4 +1,4 @@
-import { DomainEntity } from 'domain-objects';
+import { DomainEntity, DomainLiteral } from 'domain-objects';
 
 /**
  * .what = a cloudflare zone (domain container for dns management)
@@ -46,16 +46,13 @@ export interface DeclaredCloudflareDomainZone {
   nameServers?: string[];
 
   /**
-   * .what = original nameservers before cloudflare
+   * .what = original dns setup before cloudflare
    * .note = @readonly — captured on zone creation
    */
-  originalNameservers?: string[];
-
-  /**
-   * .what = original registrar name
-   * .note = @readonly
-   */
-  originalRegistrar?: string;
+  original: {
+    nameservers: string[] | null;
+    registrar: string | null;
+  } | null;
 
   /**
    * .what = when the zone was created
@@ -65,9 +62,9 @@ export interface DeclaredCloudflareDomainZone {
 
   /**
    * .what = when the zone was activated
-   * .note = @readonly
+   * .note = @readonly — null until zone is activated
    */
-  activatedOn?: string;
+  activatedOn: string | null;
 }
 
 export class DeclaredCloudflareDomainZone
@@ -77,5 +74,12 @@ export class DeclaredCloudflareDomainZone
   public static primary = ['id'] as const;
   public static unique = ['name'] as const;
   public static metadata = ['id'] as const;
-  public static readonly = ['status', 'nameServers', 'createdOn'] as const;
+  public static readonly = [
+    'status',
+    'nameServers',
+    'original',
+    'createdOn',
+    'activatedOn',
+  ] as const;
+  public static nested = { original: DomainLiteral };
 }

@@ -3,6 +3,8 @@ import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import util from 'util';
 
+import { keyrack } from 'rhachet/keyrack';
+
 // eslint-disable-next-line no-undef
 jest.setTimeout(90000); // since we're calling downstream apis
 
@@ -31,43 +33,14 @@ if (
   throw new Error(`integration.test is not targeting stage 'test'`);
 
 /**
- * .what = supply credentials from keyrack per .agent/keyrack.yml
- * .why = enables ehmpath clones to supply credentials to integration tests from their terminals
- *
- * priority:
- *   1. env vars (if already set)
- *   2. keyrack (per .agent/keyrack.yml env.test keys)
- *   3. fail-fast with setup instructions
+ * .what = source credentials from keyrack for test env
+ * .why =
+ *   - auto-inject keys into process.env
+ *   - fail fast with helpful error if keyrack locked or keys absent
  */
-const supplyCredentialsFromKeyrack = (): void => {
-  // already set via env
-  if (process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN)
-    return;
-
-  // try keyrack --for repo (reads .agent/keyrack.yml)
-  try {
-    const result = execSync('npx rhx keyrack get --for repo --env test --json', {
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-    const creds = JSON.parse(result) as Record<string, string>;
-    for (const [key, value] of Object.entries(creds)) {
-      if (!process.env[key]) process.env[key] = value;
-    }
-    return;
-  } catch {
-    // keyrack not configured, fall through to fail-fast
-  }
-
-  // fail-fast with instructions
-  throw new Error(
-    `credentials not found. setup via:
-  1. npx rhachet roles init --repo ehmpathy --role mechanic --init keyrack.ehmpath
-  2. npx rhx keyrack set --key CLOUDFLARE_ACCOUNT_ID --env test
-  3. npx rhx keyrack set --key CLOUDFLARE_API_TOKEN --env test`,
-  );
-};
-supplyCredentialsFromKeyrack();
+const keyrackYmlPath = join(process.cwd(), '.agent/keyrack.yml');
+if (existsSync(keyrackYmlPath))
+  keyrack.source({ env: 'test', owner: 'ehmpath', mode: 'strict' });
 
 /**
  * .what = verify that the env has sufficient auth to run the tests if aws is used; otherwise, fail fast

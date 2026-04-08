@@ -6,39 +6,51 @@ configure cloudflare authentication for declastruct domain management operations
 
 ## .why
 
-the cloudflare sdk requires authentication. we prefer API tokens (scoped permissions), but some operations require Global API key as a fallback:
+the cloudflare sdk requires authentication via API tokens with scoped permissions.
 
-- **API Token**: zones, dns records, registrar read
-- **Global API Key**: registrar updates (auto_renew, locked, privacy) on non-Enterprise accounts
+**important**: must use **user tokens** (created from My Profile), not account tokens. the Intel API requires user tokens — account tokens return `401 token type token != user`.
+
+---
+
+## user tokens vs account tokens
+
+| type | created from | use case |
+|------|--------------|----------|
+| **user token** | My Profile > API Tokens | acts on behalf of your user; required for Intel API |
+| **account token** | Account > API Tokens | service principal, CI/CD; does NOT work with Intel API |
+
+**sources**:
+- [user tokens vs account tokens](https://developers.cloudflare.com/fundamentals/api/get-started/account-owned-tokens/)
+- [intel api token issue (community)](https://community.cloudflare.com/t/account-api-token-not-working-for-intel-api/874319)
 
 ---
 
 ## required permissions
 
-configure these in the cloudflare dashboard when you create a custom token:
+configure these when you create a custom user token:
 
 | permission (as shown in UI) | why |
 |-----------------------------|-----|
 | Zone - Zone - Edit | create, update, delete zones |
 | Zone - DNS - Edit | create, update, delete dns records |
-| Account - Registrar: Domains - Read | list, get registrar domains |
-
-**limitation**: Registrar Edit permissions are only available for Enterprise accounts or via Global API key. Non-Enterprise accounts are limited to Read-only access for registrar operations via API tokens.
+| Account - Registrar: Domains - Admin | list, get, update registrar domains |
+| Account - Intel - Read | WHOIS lookups for domain transfer/purchase guidance |
 
 **note**: account-level scope is required for:
 - zone creation (`client.zones.create()` uses `account.id`)
 - all registrar operations (use `account_id` parameter)
+- intel/whois lookups (use `account_id` parameter)
 
 **sources**:
 - [cloudflare api token permissions](https://developers.cloudflare.com/fundamentals/api/reference/permissions/)
-- [registrar api token permissions (community)](https://community.cloudflare.com/t/domain-registrar-api-token-permissions/450561)
-- [register domains with cloudflare registrar api (community)](https://community.cloudflare.com/t/register-and-manage-domains-with-cloudflare-registrar-api/453793)
 
 ---
 
 ## steps to create token
 
 1. navigate to https://dash.cloudflare.com/profile/api-tokens
+
+   **important**: must be from **My Profile**, not Account settings
 
 2. click **Create Token**
 
@@ -49,7 +61,8 @@ configure these in the cloudflare dashboard when you create a custom token:
    - **Permissions** (add each row):
      - Zone - Zone - Edit
      - Zone - DNS - Edit
-     - Account - Registrar: Domains - Read
+     - Account - Registrar: Domains - Admin
+     - Account - Intel - Read
    - **Account Resources**: Include > [your account]
    - **Zone Resources**: Include > All zones (or specific test zone)
    - **TTL**: optional, set expiration if desired
@@ -78,37 +91,6 @@ export CLOUDFLARE_ACCOUNT_ID="your-account-id-here"
 
 ---
 
-## global api key (fallback for registrar updates)
-
-API tokens cannot update registrar settings (auto_renew, locked, privacy) on non-Enterprise accounts. if you need to update registrar domains, use Global API key as a fallback.
-
-**to get your Global API key:**
-
-1. navigate to https://dash.cloudflare.com/profile/api-tokens
-2. scroll to **API Keys** section
-3. click **View** next to **Global API Key**
-4. copy the key
-
-**environment variables with Global API key:**
-
-```bash
-# preferred: API token (for zones, dns)
-export CLOUDFLARE_API_TOKEN="your-api-token-here"
-export CLOUDFLARE_ACCOUNT_ID="your-account-id-here"
-
-# fallback: Global API key (for registrar updates)
-export CLOUDFLARE_API_KEY="your-global-api-key-here"
-export CLOUDFLARE_EMAIL="your-cloudflare-email@example.com"
-```
-
-**security note**: Global API key has full account access. prefer API tokens where possible; only use Global API key for operations that require it (registrar updates).
-
-**sources**:
-- [get global api key](https://developers.cloudflare.com/fundamentals/api/get-started/keys/)
-- [registrar domains update api](https://developers.cloudflare.com/api/resources/registrar/subresources/domains/methods/update/)
-
----
-
 ## minimal permissions (read-only)
 
 if you only need read operations (getOne, getAll):
@@ -130,6 +112,26 @@ curl -X GET "https://api.cloudflare.com/client/v4/zones" \
 ```
 
 should return list of zones (or empty array if none exist).
+
+---
+
+## global api key (fallback)
+
+if user tokens do not work for registrar operations, global api key may be required:
+
+1. navigate to https://dash.cloudflare.com/profile/api-tokens
+2. scroll to **API Keys** section
+3. click **View** next to **Global API Key**
+4. authenticate and copy the key
+
+```bash
+export CLOUDFLARE_API_KEY="your-global-api-key"
+export CLOUDFLARE_EMAIL="your-cloudflare-email"
+```
+
+**note**: global api key has full account access. prefer scoped tokens when possible.
+
+**status**: preserved pending confirmation that user tokens with Registrar Admin permission work for all operations.
 
 ---
 

@@ -49,10 +49,15 @@ export const castIntoDeclaredCloudflareDomainZone = (
       paused: input.paused,
       status: validateZoneStatus(input.status),
       nameServers: input.name_servers,
-      originalNameservers: input.original_name_servers ?? undefined,
-      originalRegistrar: input.original_registrar ?? undefined,
+      original:
+        input.original_name_servers || input.original_registrar
+          ? {
+              nameservers: input.original_name_servers ?? null,
+              registrar: input.original_registrar ?? null,
+            }
+          : null,
       createdOn: input.created_on,
-      activatedOn: input.activated_on ?? undefined,
+      activatedOn: input.activated_on ?? null,
     }),
     hasReadonly({ of: DeclaredCloudflareDomainZone }),
   );
