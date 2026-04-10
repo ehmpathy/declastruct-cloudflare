@@ -18,13 +18,16 @@ if (!existsSync(join(process.cwd(), 'package.json')))
   throw new Error('no package.json found in cwd. are you @gitroot?');
 
 /**
- * .what = source credentials from keyrack for test env
+ * .what = source credentials from keyrack for test env when not already set
  * .why =
- *   - auto-inject keys into process.env
+ *   - auto-inject keys into process.env for local dev
+ *   - skip keyrack when credentials already present (e.g., CI with secrets)
  *   - fail fast with helpful error if keyrack locked or keys absent
  */
 const keyrackYmlPath = join(process.cwd(), '.agent/keyrack.yml');
-if (existsSync(keyrackYmlPath))
+const hasCloudflareCredentials =
+  process.env.CLOUDFLARE_API_TOKEN && process.env.CLOUDFLARE_ACCOUNT_ID;
+if (existsSync(keyrackYmlPath) && !hasCloudflareCredentials)
   keyrack.source({ env: 'test', owner: 'ehmpath', mode: 'strict' });
 
 /**
