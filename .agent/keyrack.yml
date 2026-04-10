@@ -1,8 +1,5 @@
 org: ehmpathy
 
-extends:
-  - .agent/repo=ehmpathy/role=mechanic/keyrack.yml
-
 env.prod:
   - CLOUDFLARE_ACCOUNT_ID
   - CLOUDFLARE_API_TOKEN
