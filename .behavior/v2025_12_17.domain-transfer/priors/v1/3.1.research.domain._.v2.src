@@ -1,0 +1,50 @@
+expand on the research done
+- in .behavior/v2025_12_17.domain-transfer/3.1.research.domain._.v1.i1.md
+
+in order to fulfill the wish declared
+- in .behavior/v2025_12_17.domain-transfer/0.wish.md
+
+---
+
+specifically,
+
+- what operations ARE fully AUTOMATABLE ?
+- what operations are not?
+- for the operations that are not automatable, what are the procedures that we'll guide the users through?
+  - for declastruct, on non-automatable SETs, we're able to guide the user through completion via HelpfulErrors
+  - we'll do this for cloudflare as well, so that humans can still be guided through completing their goal imperatively on apply, from an input of declarative instruction on what they want to achieve
+
+- also, are all of the operations avialable to all users? or are some operations restricted to enterprise users only?
+
+---
+
+specifically
+- what are the domain objects that are involved with this wish
+  - entities
+  - events
+  - literals
+- what are the domain operations
+  - getOne
+  - getAll
+  - setCreate
+  - setUpdate
+  - setDelete
+- what are the relationships between the domain objects?
+  - is there a treestruct of decoration?
+  - is there a treestruct of common subdomains?
+  - are there dependencies?
+- how do the domain objects and operations compose to support wish?
+
+---
+
+use web search to discover and research
+- cite every claim
+- number each citation
+- clone exact quotes from each citation
+
+focus on these sdk's for reference, if provided
+-
+
+---
+
+emit into .behavior/v2025_12_17.domain-transfer/3.1.research.domain._.v2.i1.md

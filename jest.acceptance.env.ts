@@ -2,8 +2,10 @@ import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import util from 'util';
 
+import { keyrack } from 'rhachet/keyrack';
+
 // eslint-disable-next-line no-undef
-jest.setTimeout(90000); // we're calling downstream apis
+jest.setTimeout(90000); // since we're calling downstream apis
 
 // set console.log to not truncate nested objects
 util.inspect.defaultOptions.depth = 5;
@@ -16,19 +18,28 @@ if (!existsSync(join(process.cwd(), 'package.json')))
   throw new Error('no package.json found in cwd. are you @gitroot?');
 
 /**
- * sanity check that AWS credentials are available for integration tests
+ * .what = source credentials from keyrack for test env when not already set
+ * .why =
+ *   - auto-inject keys into process.env for local dev
+ *   - skip keyrack when credentials already present (e.g., CI with secrets)
+ *   - fail fast with helpful error if keyrack locked or keys absent
+ */
+const keyrackYmlPath = join(process.cwd(), '.agent/keyrack.yml');
+const hasCloudflareCredentials =
+  process.env.CLOUDFLARE_API_TOKEN && process.env.CLOUDFLARE_ACCOUNT_ID;
+if (existsSync(keyrackYmlPath) && !hasCloudflareCredentials)
+  keyrack.source({ env: 'test', owner: 'ehmpath', mode: 'strict' });
+
+/**
+ * sanity check that credentials are available for acceptance tests
  *
  * usecases
- * - prevent silent test failures due to missing credentials
+ * - prevent silent test failures due to absent credentials
  * - provide clear instructions on how to set up credentials
- *
- * supports
- * - AWS_PROFILE: local dev via ~/.aws/config profiles
- * - AWS_ACCESS_KEY_ID: CI/CD via OIDC or IAM credentials
  */
-if (!(process.env.AWS_PROFILE || process.env.AWS_ACCESS_KEY_ID))
+if (!(process.env.CLOUDFLARE_ACCOUNT_ID || process.env.CLOUDFLARE_API_TOKEN))
   throw new Error(
-    'AWS credentials not set. Run w/ creds via `source .agent/repo=.this/skills/use.demo.awsprofile.sh && npm run test:integration`',
+    'cloudflare credentials not set. Run w/ creds via `rhx keyrack unlock --owner ehmpath --env test && npm run test:acceptance`',
   );
 
 /**

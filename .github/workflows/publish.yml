@@ -12,6 +12,7 @@ concurrency:
 jobs:
   test:
     uses: ./.github/workflows/.test.yml
+    secrets: inherit
     with:
       creds-aws-region: us-east-1
       creds-aws-role-arn: arn:aws:iam::805192865516:role/ehmpathy-demo-oidc

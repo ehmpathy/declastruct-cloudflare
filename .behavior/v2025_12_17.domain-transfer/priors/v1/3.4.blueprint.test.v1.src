@@ -1,0 +1,32 @@
+propose a blueprint for how we can prove fulfillment of the wish described
+- in .behavior/v2025_12_17.domain-transfer/0.wish.md
+
+with the test infra declared
+- in .behavior/v2025_12_17.domain-transfer/3.1.research.infra.test_framework.v1.i1.md
+
+---
+
+reference the below for full context
+- .behavior/v2025_12_17.domain-transfer/0.wish.md
+- .behavior/v2025_12_17.domain-transfer/3.1.research.domain._.v1.i1.md
+- .behavior/v2025_12_17.domain-transfer/3.1.research.domain._.v2.i1.md
+- .behavior/v2025_12_17.domain-transfer/3.2.distill.domain._.v1.i1.md
+- .behavior/v2025_12_17.domain-transfer/3.1.research.infra.test_framework.v1.i1.md
+
+
+---
+
+specifically,
+- what operations need to be covered?
+  - at the test.unit grain? (i.e., atomic domain.logic)
+  - at the test.integ.boundary grain? (i.e., boundary between code + access (os, api, sdk, etc...))
+  - at the test.integ.composite grain? (i.e., composite end to end flows)
+  - at the test.accept.blackbox grain? (i.e., blackbox behavioral acceptance tests)
+
+.test.ts for unit tests
+.integration.test.ts for boundary and composite test.integs
+.acceptance.test.ts for accept.blackbox tests
+
+---
+
+emit to .behavior/v2025_12_17.domain-transfer/3.4.blueprint.test.v1.i1.md
