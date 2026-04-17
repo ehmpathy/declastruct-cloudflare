@@ -36,8 +36,6 @@
       "Bash(git cat-file:*)",
       "Bash(npx rhachet run --skill git.release:*)",
       "Bash(rhx git.release:*)",
-      "Bash(npx rhachet run --skill git.repo.test:*)",
-      "Bash(rhx git.repo.test:*)",
       "Bash(npx rhachet run --skill sedreplace:*)",
       "Bash(npx rhachet run --skill sedreplace --old 'oldName' --new 'newName' --glob 'src/**/*.ts')",
       "Bash(npx rhachet run --skill sedreplace --old 'oldName' --new 'newName' --glob 'src/**/*.ts' --mode apply)",
@@ -370,8 +368,8 @@
           },
           {
             "type": "command",
-            "command": "./node_modules/.bin/rhx git.repo.test --what lint",
-            "timeout": 60,
+            "command": "pnpm run --if-present fix",
+            "timeout": 30,
             "author": "repo=ehmpathy/role=mechanic"
           }
         ]
