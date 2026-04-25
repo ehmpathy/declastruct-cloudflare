@@ -55,16 +55,24 @@ you don't need to track where you are. just run apply — declastruct will guide
 
 ## prereqs
 
-1. fill keyrack credentials:
+### 1. create cloudflare api token
+
+see [howto.cloudflare.api-tokens-and-keys.md](../../.agent/repo=.this/role=any/briefs/howto.cloudflare.api-tokens-and-keys.md)
+
+### 2. store credentials in keyrack
+
+#### test (uses ehmpath owner)
 
 ```sh
 rhx keyrack fill --owner ehmpath --env test
+rhx keyrack unlock --owner ehmpath --env test
 ```
 
-2. unlock credentials for session:
+#### prod (requires OWNER env var)
 
 ```sh
-rhx keyrack unlock --owner ehmpath --env test
+rhx keyrack fill --owner $YOU --env prod
+rhx keyrack unlock --owner $YOU --env prod
 ```
 
 ## usage
@@ -80,27 +88,45 @@ rhx keyrack unlock --owner ehmpath --env test
 }
 ```
 
-### 2. plan changes
+### 2. create zones first
+
+create all zones before any guidance is emitted. zones propagate in parallel.
 
 ```sh
-ENV=test npx declastruct plan \
+# plan zones only
+ENV=prod OWNER=$YOU HALT_AFTER=zone npx declastruct plan \
   --wish provision/transferin/resources.ts \
-  --into provision/transferin/plan.json
+  --into provision/transferin/plan.local.json
+
+# apply zones
+ENV=prod OWNER=$YOU HALT_AFTER=zone npx declastruct apply --plan provision/transferin/plan.local.json
 ```
+
+### 3. proceed with registrations
+
+after zones are created, remove `HALT_AFTER` to get transfer guidance:
+
+```sh
+# plan full (zones + registrations)
+ENV=prod OWNER=$YOU npx declastruct plan \
+  --wish provision/transferin/resources.ts \
+  --into provision/transferin/plan.local.json
+
+# apply and follow guidance
+ENV=prod OWNER=$YOU npx declastruct apply --plan provision/transferin/plan.local.json
+```
+
+#### pre-filter 60-day locks (optional)
 
 to pre-skip domains in 60-day lock (via WHOIS check):
 
 ```sh
-EXCLUDE=ineligible.60day ENV=test npx declastruct plan \
+EXCLUDE=ineligible.60day ENV=prod OWNER=$YOU npx declastruct plan \
   --wish provision/transferin/resources.ts \
-  --into provision/transferin/plan.json
+  --into provision/transferin/plan.local.json
 ```
 
-### 3. apply (and follow guidance)
-
-```sh
-ENV=test npx declastruct apply --plan provision/transferin/plan.json
-```
+### 4. follow guidance
 
 if you see guidance, follow the steps and re-run apply:
 
@@ -122,11 +148,22 @@ repeat until apply completes without guidance.
 | submit auth code | none | cloudflare dashboard only |
 | update registration settings | full | `setDomainRegistration` (after domain is in cloudflare) |
 
+## env vars
+
+| var | default | description |
+|-----|---------|-------------|
+| ENV | (required) | test or prod |
+| OWNER | ehmpath (test) / required (prod) | keyrack owner for credentials |
+| HALT_AFTER | (none) | set to `zone` to skip registrations |
+| EXCLUDE | (none) | set to `ineligible.60day` to pre-filter via WHOIS |
+
 ## troubleshoot
 
 | issue | resolution |
 |-------|------------|
-| credentials not found | `rhx keyrack fill --owner ehmpath --env test` |
+| credentials not found (test) | `rhx keyrack fill --owner ehmpath --env test` |
+| credentials not found (prod) | `rhx keyrack fill --owner $YOU --env prod` |
+| OWNER env var required | set `OWNER=$YOU` for prod |
 | zone already exists | idempotent — returns extant zone |
 | zone stays not active | NS not updated or not propagated (wait 24-48h) |
 | transfer fails | verify auth code, ensure domain unlocked at source |
