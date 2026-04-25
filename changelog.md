@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/ehmpathy/declastruct-cloudflare/compare/v0.1.0...v0.1.1) (2026-04-25)
+
+
+### Bug Fixes
+
+* **transferin:** add prod workflow with OWNER and HALT_AFTER ([#4](https://github.com/ehmpathy/declastruct-cloudflare/issues/4)) ([e0e89c5](https://github.com/ehmpathy/declastruct-cloudflare/commit/e0e89c56a7c3cd851da193f7652ae20d53a81ed5))
+
 ## 0.1.0 (2026-04-17)
 
 

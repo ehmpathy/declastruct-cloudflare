@@ -2,7 +2,7 @@
   "name": "declastruct-cloudflare",
   "author": "ehmpathy",
   "description": "declarative control of Cloudflare constructs via declastruct",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "repository": "ehmpathy/declastruct-cloudflare",
   "homepage": "https://github.com/ehmpathy/declastruct-cloudflare",
   "keywords": [
