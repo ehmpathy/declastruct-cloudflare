@@ -1,5 +1,5 @@
-import { keyrack } from 'rhachet/keyrack';
 import { UnexpectedCodePathError } from 'helpful-errors';
+import { keyrack } from 'rhachet/keyrack';
 
 /**
  * .what = gets cloudflare credentials from keyrack
