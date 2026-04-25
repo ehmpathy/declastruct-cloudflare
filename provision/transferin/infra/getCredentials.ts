@@ -1,24 +1,29 @@
 import { keyrack } from 'rhachet/keyrack';
+import { UnexpectedCodePathError } from 'helpful-errors';
 
 /**
  * .what = gets cloudflare credentials from keyrack
  * .why = reusable across transfer-in steps
  *
- * .note = env=test uses ehmpath owner, otherwise uses default (user's keyrack)
+ * .note = env=test uses ehmpath owner, prod requires OWNER env var
  */
 export const getCredentials = (input: {
   env: string;
 }): { apiToken: string; accountId: string } => {
-  const owner = input.env === 'test' ? 'ehmpath' : undefined;
+  const owner =
+    process.env.OWNER ??
+    (input.env === 'test'
+      ? 'ehmpath'
+      : UnexpectedCodePathError.throw('OWNER env var required for prod'));
 
-  // source credentials into process.env
-  keyrack.source({ env: input.env, owner, mode: 'strict' });
+  // source credentials into process.env (outputs keyrack status to stdout)
+  keyrack.source({ env: input.env, owner });
 
   const apiToken = process.env.CLOUDFLARE_API_TOKEN;
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
 
   if (!apiToken || !accountId) {
-    const ownerHint = input.env === 'test' ? '--owner ehmpath ' : '';
+    const ownerHint = `--owner ${owner} `;
     console.error(`
 🐢 bummer dude...
 

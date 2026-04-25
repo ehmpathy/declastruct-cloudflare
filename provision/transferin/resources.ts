@@ -16,6 +16,9 @@
  *   - env passed via ENV environment variable
  *
  * options:
+ *   - HALT_AFTER=zone: only declare zones (skip registrations)
+ *     - useful for batch zone creation before NS propagation
+ *     - run without HALT_AFTER after zones are active
  *   - EXCLUDE=ineligible.60day: pre-filter domains in 60-day lock via WHOIS
  *     - skips domains with console output
  *     - useful for batch runs when you know some are locked
@@ -76,11 +79,22 @@ export const getResources = async () => {
   const inputsDir = join(dirname(fileURLToPath(import.meta.url)), 'inputs');
   const domains = getAllDomainsByInputEnv({ env }, { inputsDir });
 
+  // check if zone-only mode (halt after zone creation)
+  const zoneOnly = process.env.HALT_AFTER === 'zone';
+
   // check if 60-day filter is enabled
   const exclude60day = process.env.EXCLUDE === 'ineligible.60day';
 
-  // create cloudflare client for eligibility checks (only if filter enabled)
-  const client = exclude60day ? new Cloudflare({ apiToken }) : null;
+  // emit mode summary
+  console.log(`\n🐢 transfer-in`);
+  console.log(`   ├─ env: ${env}`);
+  console.log(`   ├─ domains: ${domains.length}`);
+  console.log(`   ├─ zone-only: ${zoneOnly}`);
+  console.log(`   └─ exclude 60-day: ${exclude60day}\n`);
+
+  // create cloudflare client for eligibility checks (only if filter enabled and not zone-only)
+  const client =
+    exclude60day && !zoneOnly ? new Cloudflare({ apiToken }) : null;
 
   const resources: (
     | DeclaredCloudflareDomainZone
@@ -95,6 +109,9 @@ export const getResources = async () => {
       paused: false,
     });
     resources.push(zone);
+
+    // skip registration if zone-only mode
+    if (zoneOnly) continue;
 
     // check eligibility if filter is enabled
     if (client) {
