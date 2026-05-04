@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/ehmpathy/declastruct-cloudflare/compare/v0.1.1...v0.1.2) (2026-05-04)
+
+
+### Bug Fixes
+
+* **rules:** declarative cloudflare domain redirect rules ([#6](https://github.com/ehmpathy/declastruct-cloudflare/issues/6)) ([6016bbf](https://github.com/ehmpathy/declastruct-cloudflare/commit/6016bbf81de2392386fa6c89f97f2cb2cb71ae75))
+
 ## [0.1.1](https://github.com/ehmpathy/declastruct-cloudflare/compare/v0.1.0...v0.1.1) (2026-04-25)
 
 
