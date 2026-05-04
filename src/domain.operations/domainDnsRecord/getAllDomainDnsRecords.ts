@@ -3,9 +3,9 @@ import type { HasReadonly, Ref } from 'domain-objects';
 import type { ContextCloudflareApi } from '@src/domain.objects/ContextCloudflareApi';
 import type { DeclaredCloudflareDomainDnsRecord } from '@src/domain.objects/DeclaredCloudflareDomainDnsRecord';
 import type { DeclaredCloudflareDomainZone } from '@src/domain.objects/DeclaredCloudflareDomainZone';
+import { expandZoneRef } from '@src/domain.operations/domainZone/expandZoneRef';
 
 import { castIntoDeclaredCloudflareDomainDnsRecord } from './castIntoDeclaredCloudflareDomainDnsRecord';
-import { expandZoneRef } from './expandZoneRef';
 
 /**
  * .what = gets all DNS records for a zone from cloudflare

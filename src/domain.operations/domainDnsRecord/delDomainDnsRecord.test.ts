@@ -1,3 +1,4 @@
+import { NotFoundError } from 'cloudflare/error';
 import { given, then, when } from 'test-fns';
 
 import { getMockedCloudflareApiContext } from '@src/.test/getMockedCloudflareApiContext';
@@ -89,7 +90,16 @@ describe('delDomainDnsRecord', () => {
           records: {
             get: jest.fn(),
             list: jest.fn(),
-            delete: jest.fn().mockRejectedValue(new Error('Record not found')),
+            delete: jest
+              .fn()
+              .mockRejectedValue(
+                new NotFoundError(
+                  404,
+                  undefined,
+                  'Record not found',
+                  {} as any,
+                ),
+              ),
           },
         } as any;
 

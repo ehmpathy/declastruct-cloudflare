@@ -4,6 +4,13 @@ import { BadRequestError } from 'helpful-errors';
 import { join } from 'path';
 import { given, then, useBeforeAll, when } from 'test-fns';
 
+import { getSampleCloudflareApiContext } from '../../.test/getSampleCloudflareApiContext';
+import { delDomainRuleRedirect } from '../../domain.operations/domainRuleRedirect/delDomainRuleRedirect';
+
+// set stable slug once at test start (prevents Date.now() drift between CLI invocations)
+const ACCEPTANCE_TEST_SLUG = `acceptance-test-${Date.now()}`;
+process.env.ACCEPTANCE_TEST_SLUG = ACCEPTANCE_TEST_SLUG;
+
 /**
  * .what = acceptance tests for declastruct-cloudflare via CLI
  * .why = verifies end-to-end workflow: resources file -> declastruct plan -> declastruct apply
@@ -11,18 +18,18 @@ import { given, then, useBeforeAll, when } from 'test-fns';
  * .note
  *   - requires CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID env vars
  *   - tests the full declastruct CLI workflow as a black box
- *   - validates idempotency by applying the same plan twice
- *   - works with empty resources (demo account has no zones)
+ *   - validates idempotency via double apply
+ *   - uses sunshineoceansurferturtles.com test zone
  */
 describe('declastruct CLI workflow', () => {
   // fail-fast if credentials not configured
   if (!process.env.CLOUDFLARE_API_TOKEN)
     BadRequestError.throw(
-      'CLOUDFLARE_API_TOKEN not set. run: source .agent/repo=.this/role=any/skills/use.demo.cloudflare.creds.sh',
+      'CLOUDFLARE_API_TOKEN not set. run: rhx keyrack unlock --owner ehmpath --env test',
     );
   if (!process.env.CLOUDFLARE_ACCOUNT_ID)
     BadRequestError.throw(
-      'CLOUDFLARE_ACCOUNT_ID not set. run: source .agent/repo=.this/role=any/skills/use.demo.cloudflare.creds.sh',
+      'CLOUDFLARE_ACCOUNT_ID not set. run: rhx keyrack unlock --owner ehmpath --env test',
     );
 
   // setup test paths
@@ -44,6 +51,18 @@ describe('declastruct CLI workflow', () => {
   // ensure test directory exists
   beforeAll(() => mkdirSync(testDir, { recursive: true }));
 
+  // cleanup test resources after all tests
+  afterAll(async () => {
+    const context = getSampleCloudflareApiContext();
+    await delDomainRuleRedirect(
+      {
+        zone: { name: 'sunshineoceansurferturtles.org' },
+        by: { unique: { slug: ACCEPTANCE_TEST_SLUG } },
+      },
+      context,
+    );
+  });
+
   given('a declastruct resources file with cloudflare provider', () => {
     when('[t0] generating a plan via declastruct CLI', () => {
       const prep = useBeforeAll(async () => {
@@ -60,8 +79,7 @@ describe('declastruct CLI workflow', () => {
         // read and parse the plan
         const planContent = readFileSync(planFile, 'utf-8');
         const plan = JSON.parse(planContent);
-        const hasTestZone = !!process.env.CLOUDFLARE_TEST_ZONE_NAME;
-        return { plan, hasTestZone };
+        return { plan };
       });
 
       then('creates a valid plan file', () => {
@@ -73,14 +91,41 @@ describe('declastruct CLI workflow', () => {
         expect(Array.isArray(prep.plan.changes)).toBe(true);
       });
 
-      then('plan has expected changes based on resources', () => {
-        if (prep.hasTestZone) {
-          // when test zone configured, expect zone findsert + record create
-          expect(prep.plan.changes.length).toBeGreaterThan(0);
-        } else {
-          // when no test zone, expect no changes (empty resources)
-          expect(prep.plan.changes).toHaveLength(0);
-        }
+      then('plan has changes for configured resources', () => {
+        // resources include: zone, dns record, 3 redirect rules
+        //   - zone is KEEP or UPDATE (already exists)
+        //   - dns record may be CREATE or KEEP
+        //   - 2 redirect rules are KEEP (stable slugs)
+        //   - 1 redirect rule is CREATE (timestamped slug)
+        expect(prep.plan.changes.length).toBeGreaterThanOrEqual(1);
+      });
+
+      then('plan includes CREATE action for timestamped redirect rule', () => {
+        const createActions = prep.plan.changes.filter(
+          (c: { action: string }) => c.action === 'CREATE',
+        );
+        expect(createActions.length).toBeGreaterThanOrEqual(1);
+
+        // verify at least one CREATE is for a redirect rule
+        const createRedirectRule = createActions.find(
+          (c: { forResource: { class: string } }) =>
+            c.forResource?.class === 'DeclaredCloudflareDomainRuleRedirect',
+        );
+        expect(createRedirectRule).toBeDefined();
+      });
+
+      then('plan structure matches snapshot', () => {
+        // snapshot captures plan shape for regression detection
+        // mask dynamic fields (ids, timestamps) for stable comparison
+        const planForSnapshot = {
+          changes: prep.plan.changes.map(
+            (change: { action: string; forResource: { class: string } }) => ({
+              action: change.action,
+              resourceClass: change.forResource?.class,
+            }),
+          ),
+        };
+        expect(planForSnapshot).toMatchSnapshot();
       });
     });
 
@@ -109,14 +154,22 @@ describe('declastruct CLI workflow', () => {
         return { plan };
       });
 
-      then('apply completes without error', () => {
-        // if we reach here, apply succeeded
-        expect(true).toBe(true);
-      });
-
-      then('plan file contains changes array', () => {
+      then('apply completes and plan has changes array', () => {
         expect(prep.plan).toHaveProperty('changes');
         expect(Array.isArray(prep.plan.changes)).toBe(true);
+      });
+
+      then('applied plan structure matches snapshot', () => {
+        // snapshot captures applied plan shape for regression detection
+        const planForSnapshot = {
+          changes: prep.plan.changes.map(
+            (change: { action: string; forResource: { class: string } }) => ({
+              action: change.action,
+              resourceClass: change.forResource?.class,
+            }),
+          ),
+        };
+        expect(planForSnapshot).toMatchSnapshot();
       });
     });
 

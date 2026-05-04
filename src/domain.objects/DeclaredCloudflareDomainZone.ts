@@ -47,9 +47,9 @@ export interface DeclaredCloudflareDomainZone {
 
   /**
    * .what = original dns setup before cloudflare
-   * .note = @readonly — captured on zone creation
+   * .note = @readonly — captured on zone creation, optional on input
    */
-  original: {
+  original?: {
     nameservers: string[] | null;
     registrar: string | null;
   } | null;
@@ -62,9 +62,9 @@ export interface DeclaredCloudflareDomainZone {
 
   /**
    * .what = when the zone was activated
-   * .note = @readonly — null until zone is activated
+   * .note = @readonly — null until zone is activated, optional on input
    */
-  activatedOn: string | null;
+  activatedOn?: string | null;
 }
 
 export class DeclaredCloudflareDomainZone

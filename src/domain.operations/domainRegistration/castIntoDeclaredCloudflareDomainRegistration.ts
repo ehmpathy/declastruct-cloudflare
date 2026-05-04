@@ -14,9 +14,11 @@ import type { DeclaredCloudflareDomainTransferIn } from '@src/domain.objects/Dec
  */
 interface CloudflareDomainShape {
   id?: string;
+  name?: string;
   available?: boolean;
   can_register?: boolean;
   created_at?: string;
+  registered_at?: string;
   current_registrar?: string;
   expires_at?: string;
   locked?: boolean;
@@ -114,8 +116,8 @@ export const castIntoDeclaredCloudflareDomainRegistration = (
       locked: input.locked,
       privacyProtection: input.privacy,
       expiresAt: input.expires_at,
-      createdAt: input.created_at,
-      updatedAt: input.updated_at,
+      createdAt: input.registered_at ?? input.created_at,
+      updatedAt: input.updated_at ?? null,
       registrantContact,
       transferIn,
       availableNameservers: undefined, // not available in SDK response

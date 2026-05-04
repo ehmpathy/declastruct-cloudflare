@@ -69,9 +69,9 @@ export interface DeclaredCloudflareDomainRegistration {
 
   /**
    * .what = when the domain was last updated
-   * .note = @readonly
+   * .note = @readonly — optional on input, may be null for newly registered domains
    */
-  updatedAt?: string;
+  updatedAt?: string | null;
 
   /**
    * .what = the registrant contact information

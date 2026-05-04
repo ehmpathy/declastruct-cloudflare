@@ -58,6 +58,7 @@
     "cloudflare": "5.2.0",
     "domain-objects": "0.31.7",
     "helpful-errors": "1.7.3",
+    "rhachet-brains-xai": "0.3.3",
     "type-fns": "1.21.0"
   },
   "devDependencies": {

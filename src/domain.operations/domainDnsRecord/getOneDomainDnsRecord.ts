@@ -1,3 +1,4 @@
+import { NotFoundError } from 'cloudflare/error';
 import type { HasReadonly, Ref } from 'domain-objects';
 import { UnexpectedCodePathError } from 'helpful-errors';
 import type { PickOne } from 'type-fns';
@@ -6,9 +7,10 @@ import type { ContextCloudflareApi } from '@src/domain.objects/ContextCloudflare
 import type { DeclaredCloudflareDomainDnsRecord } from '@src/domain.objects/DeclaredCloudflareDomainDnsRecord';
 import type { DeclaredCloudflareDomainDnsRecordType } from '@src/domain.objects/DeclaredCloudflareDomainDnsRecordType';
 import type { DeclaredCloudflareDomainZone } from '@src/domain.objects/DeclaredCloudflareDomainZone';
+import { expandZoneRef } from '@src/domain.operations/domainZone/expandZoneRef';
 
 import { castIntoDeclaredCloudflareDomainDnsRecord } from './castIntoDeclaredCloudflareDomainDnsRecord';
-import { expandZoneRef } from './expandZoneRef';
+import { findFirstRecordByContent } from './findFirstRecordByContent';
 
 /**
  * .what = gets a DNS record from cloudflare
@@ -41,8 +43,8 @@ export const getOneDomainDnsRecord = async (
         name: zone.name,
       });
     } catch (error) {
-      if (!(error instanceof Error)) throw error;
-      if (error.message.includes('not found')) return null;
+      // allowlist: NotFoundError is expected for lookup by primary key
+      if (error instanceof NotFoundError) return null;
       throw error;
     }
   }
@@ -50,19 +52,19 @@ export const getOneDomainDnsRecord = async (
   // handle get by unique (zone + name + type + content)
   if (input.by.unique) {
     const zone = await expandZoneRef(input.by.unique.zone, context);
-    for await (const r of client.dns.records.list({
+    const recordsFromApi = client.dns.records.list({
       zone_id: zone.id,
       name: { exact: input.by.unique.name },
       type: input.by.unique.type,
-    })) {
-      // filter by content to complete unique key match
-      if (r.content === input.by.unique.content) {
-        return castIntoDeclaredCloudflareDomainDnsRecord(r, {
-          name: zone.name,
-        });
-      }
-    }
-    return null;
+    });
+    const recordFound = await findFirstRecordByContent(
+      recordsFromApi,
+      input.by.unique.content,
+    );
+    if (!recordFound) return null;
+    return castIntoDeclaredCloudflareDomainDnsRecord(recordFound, {
+      name: zone.name,
+    });
   }
 
   // otherwise, unexpected input

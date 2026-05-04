@@ -1,4 +1,4 @@
-import { given, then, when } from 'test-fns';
+import { getError, given, then, when } from 'test-fns';
 
 import { getMockedCloudflareApiContext } from '@src/.test/getMockedCloudflareApiContext';
 
@@ -6,9 +6,11 @@ import { getAllDomainRegistrations } from './getAllDomainRegistrations';
 
 const createMockDomain = (overrides: Partial<any> = {}) => ({
   id: 'example.com',
+  name: 'example.com',
   available: false,
   can_register: false,
   created_at: '2023-01-01T00:00:00Z',
+  registered_at: '2023-01-01T00:00:00Z',
   current_registrar: 'cloudflare',
   expires_at: '2025-01-01T00:00:00Z',
   locked: true,
@@ -24,9 +26,9 @@ describe('getAllDomainRegistrations', () => {
       then('it should return all registrations', async () => {
         const context = getMockedCloudflareApiContext();
         const mockDomains = [
-          createMockDomain({ id: 'example.com' }),
-          createMockDomain({ id: 'test.org' }),
-          createMockDomain({ id: 'mysite.net' }),
+          createMockDomain({ id: 'example.com', name: 'example.com' }),
+          createMockDomain({ id: 'test.org', name: 'test.org' }),
+          createMockDomain({ id: 'mysite.net', name: 'mysite.net' }),
         ];
 
         // mock async iterator
@@ -65,8 +67,8 @@ describe('getAllDomainRegistrations', () => {
         async () => {
           const context = getMockedCloudflareApiContext();
           const mockDomains = [
-            createMockDomain({ id: 'domain1.com' }),
-            createMockDomain({ id: 'domain2.org' }),
+            createMockDomain({ id: 'domain1.com', name: 'domain1.com' }),
+            createMockDomain({ id: 'domain2.org', name: 'domain2.org' }),
           ];
 
           context.cloudflare.client.registrar = {
@@ -114,18 +116,20 @@ describe('getAllDomainRegistrations', () => {
     });
   });
 
-  given('a domain without id field', () => {
-    when('id is undefined', () => {
-      then('it should use empty string as domain name', async () => {
+  given('a domain without name field', () => {
+    when('name is undefined', () => {
+      then('it should throw an error', async () => {
         const context = getMockedCloudflareApiContext();
         const mockDomains = [
           {
+            id: 'example.com',
+            // name field absent
             available: false,
             expires_at: '2025-01-01T00:00:00Z',
             created_at: '2023-01-01T00:00:00Z',
             updated_at: '2023-06-15T00:00:00Z',
           },
-        ]; // no id but has required readonly fields
+        ];
 
         context.cloudflare.client.registrar = {
           domains: {
@@ -139,11 +143,11 @@ describe('getAllDomainRegistrations', () => {
           },
         } as any;
 
-        const result = await getAllDomainRegistrations(context);
+        const error = await getError(getAllDomainRegistrations(context));
 
-        expect(result).toHaveLength(1);
-        expect(result[0]?.id).toEqual('');
-        expect(result[0]?.name).toEqual('');
+        expect(error.message).toContain(
+          'cloudflare registrar.domains.list returned domain without name',
+        );
       });
     });
   });

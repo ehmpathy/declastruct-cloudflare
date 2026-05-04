@@ -31,8 +31,11 @@ import { fileURLToPath } from 'url';
 
 import {
   DeclaredCloudflareDomainRegistration,
+  DeclaredCloudflareDomainRuleRedirect,
   DeclaredCloudflareDomainZone,
   getDeclastructCloudflareProvider,
+  RULE_REDIRECT_SPEC_HTTP_TO_HTTPS,
+  RULE_REDIRECT_SPEC_ROOT_TO_WWW,
 } from '../../src/contract/sdks';
 import { getAllDomainsByInputEnv } from './infra/getAllDomainsByInputEnv';
 import { getCredentials } from './infra/getCredentials';
@@ -99,6 +102,7 @@ export const getResources = async () => {
   const resources: (
     | DeclaredCloudflareDomainZone
     | DeclaredCloudflareDomainRegistration
+    | DeclaredCloudflareDomainRuleRedirect
   )[] = [];
 
   for (const domain of domains) {
@@ -109,6 +113,23 @@ export const getResources = async () => {
       paused: false,
     });
     resources.push(zone);
+
+    // declare redirect rules (applied once zone is active)
+    const redirectHttpToHttps = new DeclaredCloudflareDomainRuleRedirect({
+      zone: refByUnique(zone),
+      slug: 'redirect-http-to-https',
+      spec: RULE_REDIRECT_SPEC_HTTP_TO_HTTPS,
+      modifiedOn: null,
+    });
+    resources.push(redirectHttpToHttps);
+
+    const redirectRootToWww = new DeclaredCloudflareDomainRuleRedirect({
+      zone: refByUnique(zone),
+      slug: 'redirect-root-to-www',
+      spec: RULE_REDIRECT_SPEC_ROOT_TO_WWW,
+      modifiedOn: null,
+    });
+    resources.push(redirectRootToWww);
 
     // skip registration if zone-only mode
     if (zoneOnly) continue;
