@@ -1,3 +1,4 @@
+import { ConstraintError } from 'helpful-errors';
 import { given, then, useBeforeAll, when } from 'test-fns';
 
 import type { ContextCloudflareApi } from '@src/domain.objects/ContextCloudflareApi';
@@ -19,17 +20,21 @@ import {
  *
  * .note
  *   - requires CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID env vars
- *   - tests are read-only to avoid creating resources
+ *   - tests are read-only to avoid resource creation
  */
 describe('declastruct-cloudflare', () => {
-  // skip if credentials not configured
-  const hasCredentials =
-    process.env.CLOUDFLARE_API_TOKEN && process.env.CLOUDFLARE_ACCOUNT_ID;
-
-  // use conditional describe to skip if no credentials
-  const describeWithCredentials = hasCredentials ? describe : describe.skip;
-
-  describeWithCredentials('with live cloudflare api', () => {
+  describe('with live cloudflare api', () => {
+    // fail-fast if credentials not configured
+    beforeAll(() => {
+      if (!process.env.CLOUDFLARE_API_TOKEN)
+        throw new ConstraintError('CLOUDFLARE_API_TOKEN required', {
+          hint: 'run: rhx keyrack unlock --owner ehmpath --env test',
+        });
+      if (!process.env.CLOUDFLARE_ACCOUNT_ID)
+        throw new ConstraintError('CLOUDFLARE_ACCOUNT_ID required', {
+          hint: 'run: rhx keyrack unlock --owner ehmpath --env test',
+        });
+    });
     const context = useBeforeAll(async (): Promise<ContextCloudflareApi> => {
       const client = createCloudflareClient({
         apiToken: process.env.CLOUDFLARE_API_TOKEN!,
@@ -85,7 +90,7 @@ describe('declastruct-cloudflare', () => {
 
       when('[t0] getAllDomainDnsRecords is called on a zone', () => {
         then('it should return an array if a zone exists', async () => {
-          // skip if no zones
+          // skip if no zones in account
           if (!zonesData.firstZone) return;
 
           const records = await getAllDomainDnsRecords(
@@ -100,7 +105,7 @@ describe('declastruct-cloudflare', () => {
         '[t1] getOneDomainDnsRecord is called with non-existent record',
         () => {
           then('it should return null', async () => {
-            // skip if no zones
+            // skip if no zones in account
             if (!zonesData.firstZone) return;
 
             const record = await getOneDomainDnsRecord(

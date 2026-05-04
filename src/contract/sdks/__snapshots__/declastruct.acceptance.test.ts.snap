@@ -1,0 +1,55 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`declastruct CLI workflow given: a declastruct resources file with cloudflare provider when: [t0] generating a plan via declastruct CLI then: plan structure matches snapshot 1`] = `
+{
+  "changes": [
+    {
+      "action": "UPDATE",
+      "resourceClass": "DeclaredCloudflareDomainZone",
+    },
+    {
+      "action": "UPDATE",
+      "resourceClass": "DeclaredCloudflareDomainDnsRecord",
+    },
+    {
+      "action": "KEEP",
+      "resourceClass": "DeclaredCloudflareDomainRuleRedirect",
+    },
+    {
+      "action": "KEEP",
+      "resourceClass": "DeclaredCloudflareDomainRuleRedirect",
+    },
+    {
+      "action": "CREATE",
+      "resourceClass": "DeclaredCloudflareDomainRuleRedirect",
+    },
+  ],
+}
+`;
+
+exports[`declastruct CLI workflow given: a declastruct resources file with cloudflare provider when: [t1] applying a plan via declastruct CLI then: applied plan structure matches snapshot 1`] = `
+{
+  "changes": [
+    {
+      "action": "UPDATE",
+      "resourceClass": "DeclaredCloudflareDomainZone",
+    },
+    {
+      "action": "UPDATE",
+      "resourceClass": "DeclaredCloudflareDomainDnsRecord",
+    },
+    {
+      "action": "KEEP",
+      "resourceClass": "DeclaredCloudflareDomainRuleRedirect",
+    },
+    {
+      "action": "KEEP",
+      "resourceClass": "DeclaredCloudflareDomainRuleRedirect",
+    },
+    {
+      "action": "CREATE",
+      "resourceClass": "DeclaredCloudflareDomainRuleRedirect",
+    },
+  ],
+}
+`;

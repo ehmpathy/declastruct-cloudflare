@@ -110,13 +110,13 @@ describe('domainRegistration', () => {
           const registration = await getOneDomainRegistration(
             {
               by: { primary: { id: registrationsData.firstRegistration.id } },
-              zone: { id: 'custom-zone-id' },
+              zone: { name: 'custom-zone-name' },
             },
             getContext(),
           );
 
           expect(registration).not.toBeNull();
-          expect(registration?.zone).toEqual({ id: 'custom-zone-id' });
+          expect(registration?.zone).toEqual({ name: 'custom-zone-name' });
         });
       });
     });

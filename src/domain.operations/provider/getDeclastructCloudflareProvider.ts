@@ -5,6 +5,7 @@ import type { ContextLogTrail } from 'simple-log-methods';
 
 import { DeclaredCloudflareDomainDnsRecordDao } from '@src/access/daos/DeclaredCloudflareDomainDnsRecordDao';
 import { DeclaredCloudflareDomainRegistrationDao } from '@src/access/daos/DeclaredCloudflareDomainRegistrationDao';
+import { DeclaredCloudflareDomainRuleRedirectDao } from '@src/access/daos/DeclaredCloudflareDomainRuleRedirectDao';
 import { DeclaredCloudflareDomainZoneDao } from '@src/access/daos/DeclaredCloudflareDomainZoneDao';
 import type { ContextCloudflareApi } from '@src/domain.objects/ContextCloudflareApi';
 import type { DeclastructCloudflareProvider } from '@src/domain.objects/DeclastructCloudflareProvider';
@@ -45,6 +46,8 @@ export const getDeclastructCloudflareProvider = async (
     DeclaredCloudflareDomainDnsRecord: DeclaredCloudflareDomainDnsRecordDao,
     DeclaredCloudflareDomainRegistration:
       DeclaredCloudflareDomainRegistrationDao,
+    DeclaredCloudflareDomainRuleRedirect:
+      DeclaredCloudflareDomainRuleRedirectDao,
   };
 
   // return provider with all required properties

@@ -33,6 +33,7 @@ configure these when you create a custom user token:
 |-----------------------------|-----|
 | Zone - Zone - Edit | create, update, delete zones |
 | Zone - DNS - Edit | create, update, delete dns records |
+| Zone - Single Redirect - Edit | create, update, delete redirect rules (http_request_dynamic_redirect phase) |
 | Account - Registrar: Domains - Admin | list, get, update registrar domains |
 | Account - Intel - Read | WHOIS lookups for domain transfer/purchase guidance |
 
@@ -40,6 +41,8 @@ configure these when you create a custom user token:
 - zone creation (`client.zones.create()` uses `account.id`)
 - all registrar operations (use `account_id` parameter)
 - intel/whois lookups (use `account_id` parameter)
+
+**note**: the "Single Redirect" permission controls access to the Rulesets API for single redirects (http_request_dynamic_redirect phase).
 
 **sources**:
 - [cloudflare api token permissions](https://developers.cloudflare.com/fundamentals/api/reference/permissions/)
@@ -61,6 +64,7 @@ configure these when you create a custom user token:
    - **Permissions** (add each row):
      - Zone - Zone - Edit
      - Zone - DNS - Edit
+     - Zone - Single Redirect - Edit
      - Account - Registrar: Domains - Admin
      - Account - Intel - Read
    - **Account Resources**: Include > [your account]

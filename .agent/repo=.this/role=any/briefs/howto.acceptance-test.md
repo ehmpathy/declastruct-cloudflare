@@ -103,19 +103,16 @@ describe('declastruct CLI workflow', () => {
 ### 3. run acceptance tests
 
 ```sh
-# set cloudflare credentials
-source .agent/repo=.this/role=any/skills/use.demo.cloudflare.creds.sh
-
-# run acceptance tests
-npm run test:acceptance
+# run acceptance tests (auto-unlocks keyrack credentials)
+rhx git.repo.test --what acceptance
 ```
 
 ## .notes
 
 - acceptance tests are **black box tests** - they only use the public SDK exports
-- the demo account has **no zones**, so tests work with empty resources
-- tests still verify the full workflow: plan -> apply -> idempotent apply
-- when a real zone is available, add resources to `getResources()` to test actual changes
+- credentials are auto-unlocked via keyrack (`ehmpath` owner, `test` env)
+- tests verify the full workflow: plan -> apply -> idempotent apply
+- uses `sunshineoceansurferturtles.org` test zone (active in demo account)
 - the resources file imports from `dist/` (the built package) to simulate real usage
 
 ## .structure

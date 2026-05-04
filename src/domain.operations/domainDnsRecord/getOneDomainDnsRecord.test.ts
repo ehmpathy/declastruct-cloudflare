@@ -1,3 +1,4 @@
+import { NotFoundError } from 'cloudflare/error';
 import { given, then, when } from 'test-fns';
 
 import { getMockedCloudflareApiContext } from '@src/.test/getMockedCloudflareApiContext';
@@ -90,7 +91,16 @@ describe('getOneDomainDnsRecord', () => {
 
         context.cloudflare.client.dns = {
           records: {
-            get: jest.fn().mockRejectedValue(new Error('Record not found')),
+            get: jest
+              .fn()
+              .mockRejectedValue(
+                new NotFoundError(
+                  404,
+                  undefined,
+                  'Record not found',
+                  {} as any,
+                ),
+              ),
             list: jest.fn(),
           },
         } as any;
